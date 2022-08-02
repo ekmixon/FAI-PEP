@@ -26,9 +26,9 @@ def construct_single_q(rule):
     }[operator]
 
     if cond != "range":
-        cond_dict = {"{}__{}".format(rule["id"], cond): rule["value"]}
+        cond_dict = {f'{rule["id"]}__{cond}': rule["value"]}
     else:
-        cond_dict = {"{}__{}".format(rule["id"], cond): tuple(rule["value"])}
+        cond_dict = {f'{rule["id"]}__{cond}': tuple(rule["value"])}
 
     q_obj = Q(**cond_dict)
 
@@ -45,9 +45,8 @@ def construct_q(filters):
 
     q_list = [construct_q(rule) for rule in filters["rules"]]
 
-    if filters["condition"] == "AND":
-        q_obj = reduce(operator.and_, q_list)
-    else:
-        q_obj = reduce(operator.or_, q_list)
-
-    return q_obj
+    return (
+        reduce(operator.and_, q_list)
+        if filters["condition"] == "AND"
+        else reduce(operator.or_, q_list)
+    )

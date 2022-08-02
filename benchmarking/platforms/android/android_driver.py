@@ -23,9 +23,8 @@ from six import string_types
 class AndroidDriver:
     def __init__(self, args, devices=None):
         self.args = args
-        if devices:
-            if isinstance(devices, string_types):
-                devices = [devices]
+        if devices and isinstance(devices, string_types):
+            devices = [devices]
         self.devices = devices
         self.type = "android"
 

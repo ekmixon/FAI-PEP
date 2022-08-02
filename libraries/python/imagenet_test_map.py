@@ -60,10 +60,12 @@ class ImageLableMap(object):
         self.args = parser.parse_args()
         assert os.path.isfile(
             self.args.label_file
-        ), "Label file {} doesn't exist".format(self.args.label_file)
+        ), f"Label file {self.args.label_file} doesn't exist"
+
         assert os.path.isdir(
             self.args.image_dir
-        ), "Image directory {} doesn't exist".format(self.args.image_dir)
+        ), f"Image directory {self.args.image_dir} doesn't exist"
+
         if self.args.output_image_file:
             output_image_dir = os.path.dirname(
                 os.path.abspath(self.args.output_image_file)
@@ -86,7 +88,7 @@ class ImageLableMap(object):
             rel_dir = one_map[0]
             label = one_map[1]
             dir = os.path.join(os.path.abspath(self.args.image_dir), rel_dir)
-            assert os.path.isdir(dir), "image dir {} doesn't exist".format(dir)
+            assert os.path.isdir(dir), f"image dir {dir} doesn't exist"
             files = os.listdir(dir)
             images_map = [
                 {

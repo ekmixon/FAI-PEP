@@ -21,4 +21,3 @@ def getRepo(repo, repo_dir):
         return HGRepo(repo_dir)
     else:
         raise AssertionError("Repo not recognized")
-        return None

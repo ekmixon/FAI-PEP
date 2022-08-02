@@ -49,10 +49,9 @@ class ScreenReporter(object):
             if s["id"] not in statuses:
                 statuses[s["id"]] = s["status"]
                 self._display(s)
-            else:
-                if statuses[s["id"]] != s["status"]:
-                    statuses[s["id"]] = s["status"]
-                    self._display(s)
+            elif statuses[s["id"]] != s["status"]:
+                statuses[s["id"]] = s["status"]
+                self._display(s)
         for s in statuses:
             status = statuses[s]
             if status not in ["DONE", "FAILED", "USER_ERROR", "TIMEOUT"]:
@@ -62,10 +61,15 @@ class ScreenReporter(object):
     def _display(self, s):
         abbrs = self.devices.getAbbrs(s["device"])
         print(
-            "Job status for {}".format(s["device"])
-            + (" (" + ",".join(abbrs) + ")" if abbrs else "")
-            + " is changed to {}".format(s["status"])
+            (
+                (
+                    f'Job status for {s["device"]}'
+                    + (" (" + ",".join(abbrs) + ")" if abbrs else "")
+                )
+                + f' is changed to {s["status"]}'
+            )
         )
+
         self._displayResult(s)
 
     def _printLog(self, r):
@@ -79,22 +83,18 @@ class ScreenReporter(object):
                 if not os.path.exists(self.log_output_dir):
                     os.makedirs(self.log_output_dir)
                 # Use device name to create an output log file in the directory 'log_output_dir'
-                output_file_name = self.log_output_dir + "/" + r["device"] + ".txt"
+                output_file_name = f"{self.log_output_dir}/" + r["device"] + ".txt"
                 with open(output_file_name, "w") as outfile:
                     outfile.write(r["log"])
                     print(
                         "Logs written for " + r["device"] + " at " + self.log_output_dir
                     )
             except Exception as e:
-                print("Caught exception: " + str(e))
-                print("Could not write to file specified at " + self.log_output_dir)
+                print(f"Caught exception: {str(e)}")
+                print(f"Could not write to file specified at {self.log_output_dir}")
 
     def _displayResult(self, s):
-        if (
-            s["status"] != "DONE"
-            and s["status"] != "FAILED"
-            and s["status"] != "USER_ERROR"
-        ):
+        if s["status"] not in ["DONE", "FAILED", "USER_ERROR"]:
             return
         output = self.xdb.getBenchmarks(str(s["id"]))
         for r in output:
@@ -112,7 +112,7 @@ class ScreenReporter(object):
                             net_delay = data["NET latency"]["summary"]["mean"]
                         else:
                             raise AssertionError("Net latency is not specified")
-                        print("ID:{}\tNET latency: {}".format(identifier, net_delay))
+                        print(f"ID:{identifier}\tNET latency: {net_delay}")
                     elif metric == "generic":
                         if isinstance(data, dict):
                             if "meta" in data:

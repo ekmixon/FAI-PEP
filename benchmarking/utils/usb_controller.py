@@ -36,28 +36,27 @@ class USBController:
         with open(usb_hub_device_mapping) as f:
             mapping = json.load(f)
 
-        getLogger().info("mapping {}".format(mapping))
+        getLogger().info(f"mapping {mapping}")
         for hub_serial, port_device_map in mapping.items():
             for port_number, device_hash in port_device_map.items():
                 self.device_map[device_hash] = (int(port_number), hub_serial)
                 self.active[device_hash] = True  # default on
-        getLogger().info("mapping {}".format(self.device_map))
+        getLogger().info(f"mapping {self.device_map}")
 
     def connect(self, device_hash):
         try:
             port_number, hub_serial = self.device_map[device_hash]
         except KeyError:
-            raise Exception("Device {} or hub not connected".format(device_hash))
+            raise Exception(f"Device {device_hash} or hub not connected")
 
         stem = brainstem.stem.USBHub3p()
         result = stem.discoverAndConnect(brainstem.link.Spec.USB, int(hub_serial))
 
         if result != Result.NO_ERROR:
             raise Exception(
-                "Could not connect to hub {} with error code {}".format(
-                    hub_serial, result
-                )
+                f"Could not connect to hub {hub_serial} with error code {result}"
             )
+
 
         try:
             result = stem.usb.setPortEnable(port_number)
@@ -65,10 +64,9 @@ class USBController:
                 self.active[device_hash] = True
             else:
                 raise Exception(
-                    "Could not enable port {} with error code {}".format(
-                        port_number, result
-                    )
+                    f"Could not enable port {port_number} with error code {result}"
                 )
+
         finally:
             stem.disconnect()
 
@@ -76,17 +74,16 @@ class USBController:
         try:
             port_number, hub_serial = self.device_map[device_hash]
         except KeyError:
-            raise Exception("Device {} or hub not connected".format(device_hash))
+            raise Exception(f"Device {device_hash} or hub not connected")
 
         stem = brainstem.stem.USBHub3p()
         result = stem.discoverAndConnect(brainstem.link.Spec.USB, int(hub_serial))
 
         if result != Result.NO_ERROR:
             raise Exception(
-                "Could not connect to hub {} with error code {}".format(
-                    hub_serial, result
-                )
+                f"Could not connect to hub {hub_serial} with error code {result}"
             )
+
 
         try:
             result = stem.usb.setPortDisable(port_number)
@@ -94,9 +91,8 @@ class USBController:
                 self.active[device_hash] = False
             else:
                 raise Exception(
-                    "Could not diable port {} with error code {}".format(
-                        port_number, result
-                    )
+                    f"Could not diable port {port_number} with error code {result}"
                 )
+
         finally:
             stem.disconnect()

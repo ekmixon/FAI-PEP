@@ -57,7 +57,7 @@ class BasicFlowTest(unittest.TestCase):
 
     def save_args_checker(self):
         # git_config
-        with open(self.git_config + "/config.txt") as f:
+        with open(f"{self.git_config}/config.txt") as f:
             commands = json.load(f)
 
         self.assertEqual(commands["--repo_dir"], self.test_framework)

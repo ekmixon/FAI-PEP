@@ -75,10 +75,12 @@ class ProcessSingleImageOutput(object):
     def getBlobs(self):
         blob_names = self.args.blob_names.split(",")
         blob_files = self.args.blob_files.split(",")
-        blobs = {}
         assert len(blob_names) == len(blob_files)
-        for i in range(len(blob_names)):
-            blobs[blob_names[i]] = self.getData(blob_files[i])
+        blobs = {
+            blob_names[i]: self.getData(blob_files[i])
+            for i in range(len(blob_names))
+        }
+
         # restructure the blobs.
         # All blobs should have the same number of entries
         num = len(blobs[blob_names[0]])
@@ -114,7 +116,7 @@ class ProcessSingleImageOutput(object):
             boxes_exp = boxes.copy()
             boxes_exp[:, 2:4] *= scale
         else:
-            raise Exception("Unsupported box dimension: {}".format(box_dim))
+            raise Exception(f"Unsupported box dimension: {box_dim}")
 
         return boxes_exp
 

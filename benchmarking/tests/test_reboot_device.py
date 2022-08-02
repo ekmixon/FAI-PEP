@@ -51,15 +51,15 @@ class RebootTest(unittest.TestCase):
             self.assertEqual(mock_ios.call_count, 2)
 
         with patch(
-            "reboot_device.parse", return_value=(argparse.Namespace(), [])
-        ), patch(
-            "reboot_device.getArgs",
-            return_value=argparse.Namespace(device="UNKNOWN", platform="UNKNOWN"),
-        ) as mock_ios:
+                "reboot_device.parse", return_value=(argparse.Namespace(), [])
+            ), patch(
+                "reboot_device.getArgs",
+                return_value=argparse.Namespace(device="UNKNOWN", platform="UNKNOWN"),
+            ) as mock_ios:
             try:
                 reboot()
             except AssertionError as e:
-                print(str(e))
+                print(e)
                 self.assertEqual(str(e), "Platform UNKNOWN not recognized")
 
 

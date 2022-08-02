@@ -28,9 +28,7 @@ def registerProfiler(name, profiler, usage=None):
 
 def getProfiler(name, id=None, **kwargs):
     global profilers
-    if name not in profilers:
-        return None
-    return profilers[name](id, **kwargs)
+    return None if name not in profilers else profilers[name](id, **kwargs)
 
 
 def getProfilerByUsage(usage, id=None, **kwargs):

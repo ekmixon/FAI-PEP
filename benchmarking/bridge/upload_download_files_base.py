@@ -6,7 +6,6 @@ file_handles = {}
 class UploadDownloadFilesBase(object):
     def __init__(self, args):
         self.args = args
-        pass
 
     def upload(self, **kwargs):
         pass

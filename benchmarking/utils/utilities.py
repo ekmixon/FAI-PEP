@@ -72,9 +72,7 @@ def getBenchmarks(json_input, framework=None):
         path = os.path.abspath(os.path.dirname(json_input))
         for benchmark_file in content["benchmarks"]:
             filename = os.path.join(path, benchmark_file)
-            assert os.path.isfile(filename), "Benchmark {} doesn't exist".format(
-                filename
-            )
+            assert os.path.isfile(filename), f"Benchmark {filename} doesn't exist"
             with open(filename, "r") as f:
                 cnt = json.load(f)
                 if framework and "model" in cnt and "framework" not in cnt["model"]:
@@ -90,25 +88,24 @@ def getBenchmarks(json_input, framework=None):
 
 def getDirectory(commit_hash, commit_time):
     dt = datetime.datetime.utcfromtimestamp(commit_time)
-    directory = os.path.join(str(dt.year), str(dt.month), str(dt.day), commit_hash)
-    return directory
+    return os.path.join(str(dt.year), str(dt.month), str(dt.day), commit_hash)
 
 
 def getCommand(command):
     exe = command[0]
     args = [x if x.isdigit() else "'" + x + "'" for x in command[1:]]
-    cmd = exe + " " + " ".join(args)
-    return cmd
+    return f"{exe} " + " ".join(args)
 
 
 def getFilename(name, **kwargs):
-    replace_pattern = {" ": "-", "\\": "-", ":": "-", "/": "-"}
-    if "replace_pattern" in kwargs:
-        replace_pattern = kwargs["replace_pattern"]
+    replace_pattern = kwargs.get(
+        "replace_pattern", {" ": "-", "\\": "-", ":": "-", "/": "-"}
+    )
+
     filename = name
     for orig_pattern, repl_pattern in replace_pattern.items():
         filename = filename.replace(orig_pattern, repl_pattern)
-    res = "".join(
+    return "".join(
         [
             c
             for c in filename
@@ -120,7 +117,6 @@ def getFilename(name, **kwargs):
             or c == "/"
         ]
     ).rstrip()
-    return res
 
 
 def getPythonInterpreter():
@@ -160,11 +156,7 @@ def deepReplace(root, pattern, replacement):
 
 def getString(s):
     s = str(s)
-    if os.name == "nt":
-        # escape " with \"
-        return '"' + s.replace('"', '\\"') + '"'
-    else:
-        return s
+    return '"' + s.replace('"', '\\"') + '"' if os.name == "nt" else s
 
 
 def getFAIPEPROOT():
@@ -184,9 +176,7 @@ def ca_cert():
 def requestsData(url, **kwargs):
     delay = 0
     total_delay = 0
-    timeout = -1
-    if "timeout" in kwargs:
-        timeout = kwargs["timeout"]
+    timeout = kwargs.get("timeout", -1)
     retry = kwargs.pop("retry", True)
     result = None
     while True:
@@ -205,9 +195,7 @@ def requestsData(url, **kwargs):
                 session.verify = ca_cert()
                 result = session.post(url, **kwargs)
             if result.status_code != 200:
-                getLogger().error(
-                    "Post request failed, receiving code {}".format(result.status_code)
-                )
+                getLogger().error(f"Post request failed, receiving code {result.status_code}")
             else:
                 if delay > 0:
                     getLogger().info("Post request successful")
@@ -224,14 +212,15 @@ def requestsData(url, **kwargs):
             break
         delay = delay + 1 if delay <= 5 else delay
         sleep_time = 1 << delay
-        getLogger().info("wait {} seconds. Retrying...".format(sleep_time))
+        getLogger().info(f"wait {sleep_time} seconds. Retrying...")
         sleep(sleep_time)
         total_delay += sleep_time
         if timeout > 0 and total_delay > timeout:
             break
     getLogger().error(
-        "Failed to post to {}, retrying after {} seconds...".format(url, total_delay)
+        f"Failed to post to {url}, retrying after {total_delay} seconds..."
     )
+
     return result
 
 
@@ -239,12 +228,11 @@ def requestsJson(url, **kwargs):
     try:
         result = requestsData(url, **kwargs)
         if result and result.status_code == 200:
-            result_json = result.json()
-            return result_json
+            return result.json()
     except ValueError as e:
-        getLogger().error("Cannot decode json {}".format(e.output))
+        getLogger().error(f"Cannot decode json {e.output}")
 
-    getLogger().error("Failed to retrieve json from {}".format(url))
+    getLogger().error(f"Failed to retrieve json from {url}")
     return {}
 
 
@@ -253,7 +241,7 @@ def parse_kwarg(kwarg_str):
     try:
         value = ast.literal_eval("'" + value + "'")
     except ValueError:
-        getLogger().error("Failed to parse kwarg str: {}".format(kwarg_str))
+        getLogger().error(f"Failed to parse kwarg str: {kwarg_str}")
     return key, value
 
 
@@ -267,8 +255,7 @@ def getModelName(model):
         model_file_name = model["name"]
     else:
         model_file_name = "model"
-    model_name = os.path.splitext(model_file_name)[0].replace(" ", "_")
-    return model_name
+    return os.path.splitext(model_file_name)[0].replace(" ", "_")
 
 
 # Run status

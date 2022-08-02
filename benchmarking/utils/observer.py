@@ -16,21 +16,23 @@ import json
 # converts the passed in fields into one of the formats expected by the data converter
 # and prepends the identifer to the json string
 def emitMetric(identifier="PyTorchObserver", **kwargs):
-    data = {}
     # check basic fields in all formats are present
     if "type" not in kwargs or "metric" not in kwargs or "unit" not in kwargs:
         return ""
-    data["type"] = kwargs["type"]
-    data["metric"] = kwargs["metric"]
-    data["unit"] = kwargs["unit"]
+    data = {
+        "type": kwargs["type"],
+        "metric": kwargs["metric"],
+        "unit": kwargs["unit"],
+    }
+
     # fields in value format
     if "value" in kwargs:
         data["value"] = kwargs["value"]
-        return "{} {}".format(identifier, json.dumps(data))
+        return f"{identifier} {json.dumps(data)}"
     # fields in info format
     if "info_string" in kwargs:
         data["info_string"] = kwargs["info_string"]
-        return "{} {}".format(identifier, json.dumps(data))
+        return f"{identifier} {json.dumps(data)}"
     # fields in summary format
     # summary is a list of [p0, p10, p50, p90, p100, mean, stdev, MAD]
     if "num_runs" in kwargs and "summary" in kwargs and len(kwargs["summary"]) == 8:
@@ -48,6 +50,6 @@ def emitMetric(identifier="PyTorchObserver", **kwargs):
         data["summary"] = {}
         for key, idx in summaryMapping.items():
             data["summary"][key] = kwargs["summary"][idx]
-        return "{} {}".format(identifier, json.dumps(data))
+        return f"{identifier} {json.dumps(data)}"
     # invalid set of fields was passed in
     return ""

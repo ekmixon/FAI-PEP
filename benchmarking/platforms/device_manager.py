@@ -46,8 +46,7 @@ def getDevicesString(devices):
         + ("1" if d["available"] else "0" if d["live"] else "2")
         for d in devices
     ]
-    devices_str = ",".join(device_list)
-    return devices_str
+    return ",".join(device_list)
 
 
 def valid_dm_interval(arg) -> int:
@@ -57,10 +56,9 @@ def valid_dm_interval(arg) -> int:
             raise ValueError()
     except ValueError:
         getLogger().warning(
-            "Logging interval must be specified as an integer in seconds >= {}.  Using default {}s.".format(
-                MINIMUM_DM_INTERVAL, DEFAULT_DM_INTERVAL
-            )
+            f"Logging interval must be specified as an integer in seconds >= {MINIMUM_DM_INTERVAL}.  Using default {DEFAULT_DM_INTERVAL}s."
         )
+
         value = DEFAULT_DM_INTERVAL
     return value
 
@@ -126,22 +124,19 @@ class DeviceManager(object):
                     ):
                         usb_disabled = True
                     if "rebooting" not in lab_device and not usb_disabled:
-                        getLogger().error(
-                            "Device {} has become unavailable.".format(offline_device)
-                        )
+                        getLogger().error(f"Device {offline_device} has become unavailable.")
                         self._disableDevice(offline_device)
-                        # TODO: self._sendErrorReport()
+                                        # TODO: self._sendErrorReport()
             if new_devices:
                 devices = ",".join(new_devices)
-                devices = self._getDevices(devices)
-                if devices:
+                if devices := self._getDevices(devices):
                     for d in devices:
                         self._enableDevice(d)
                         if d["hash"] not in [
                             device["hash"] for device in self.online_devices
                         ]:
                             self.online_devices.append(d)
-                        getLogger().info("New device added: {}".format(d))
+                        getLogger().info(f"New device added: {d}")
         except BaseException:
             getLogger().exception("Error while checking devices.")
 
@@ -150,33 +145,29 @@ class DeviceManager(object):
         claimer_id = self.args.claimer_id
         hashes = []
         for k in self.lab_devices:
-            for hash in self.lab_devices[k]:
-                if self.lab_devices[k][hash]["live"]:
-                    hashes.append(hash)
+            hashes.extend(
+                hash
+                for hash in self.lab_devices[k]
+                if self.lab_devices[k][hash]["live"]
+            )
+
         hashes = ",".join(hashes)
         self.db.updateHeartbeats(claimer_id, hashes)
 
     def _getDevices(self, devices=None):
         """Get list of device meta data for available devices."""
-        raw_args = []
-        raw_args.extend(["--platform", self.args.platform])
+        raw_args = ["--platform", self.args.platform]
         if self.args.platform_sig:
-            raw_args.append("--platform_sig")
-            raw_args.append(self.args.platform_sig)
+            raw_args.extend(("--platform_sig", self.args.platform_sig))
         if devices:
             raw_args.append("--devices")
             raw_args.append(devices)
         elif self.args.devices:
-            raw_args.append("--devices")
-            raw_args.append(self.args.devices)
+            raw_args.extend(("--devices", self.args.devices))
         if self.args.hash_platform_mapping:
-            # if the user provides filename, we will load it.
-            raw_args.append("--hash_platform_mapping")
-            raw_args.append(self.args.hash_platform_mapping)
+            raw_args.extend(("--hash_platform_mapping", self.args.hash_platform_mapping))
         if self.args.device_name_mapping:
-            # if the user provides filename, we will load it.
-            raw_args.append("--device_name_mapping")
-            raw_args.append(self.args.device_name_mapping)
+            raw_args.extend(("--device_name_mapping", self.args.device_name_mapping))
         app = GetConnectedDevices(raw_args=raw_args)
         devices_json = app.run()
         assert devices_json, "Devices cannot be empty"
@@ -290,19 +281,20 @@ class CoolDownDevice(Thread):
         success = True
         # reboot mobile devices if required
         if reboot:
-            raw_args = []
-            raw_args.extend(["--platform", self.args.platform])
-            raw_args.extend(["--device", self.device["hash"]])
-            raw_args.extend(["--android_dir", self.args.android_dir])
+            raw_args = [
+                "--platform",
+                self.args.platform,
+                *["--device", self.device["hash"]],
+                *["--android_dir", self.args.android_dir],
+            ]
+
             self.device["rebooting"] = True
             if reboot_device(raw_args=raw_args):
-                getLogger().info("Device {} was rebooted.".format(self.device))
+                getLogger().info(f"Device {self.device} was rebooted.")
                 self.device["reboot_time"] = datetime.datetime.now()
             else:
                 self.device.pop("rebooting")
-                getLogger().error(
-                    "Device {} could not be rebooted.".format(self.device)
-                )
+                getLogger().error(f"Device {self.device} could not be rebooted.")
                 success = False
         # sleep for device cooldown
         if self.args.platform.startswith("ios") or self.args.platform.startswith(
@@ -323,10 +315,9 @@ class CoolDownDevice(Thread):
                 device_str = getDevicesString([self.device])
                 self.db.updateDevices(self.args.claimer_id, device_str, False)
                 getLogger().info(
-                    "Device {}({}) available".format(
-                        self.device["kind"], self.device["hash"]
-                    )
+                    f'Device {self.device["kind"]}({self.device["hash"]}) available'
                 )
+
             else:
                 self.device["live"] = False
         getLogger().info("CoolDownDevice lock released")

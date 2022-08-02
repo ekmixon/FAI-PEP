@@ -15,10 +15,7 @@ class UploadDownloadFiles(object):
             self.obj = self.file_handles[file_storage](self.args)
 
     def upload(self, **kwargs):
-        res = ""
-        if self.obj is not None:
-            res = self.obj.upload(**kwargs)
-        return res
+        return self.obj.upload(**kwargs) if self.obj is not None else ""
 
     def download(self, **kwargs):
         if self.obj is not None:

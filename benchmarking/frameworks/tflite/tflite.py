@@ -63,7 +63,7 @@ class TFLiteFramework(FrameworkBase):
         preprocess_files=None,
         main_command=False,
     ):
-        cmds = super(TFLiteFramework, self).composeRunCommand(
+        if cmds := super(TFLiteFramework, self).composeRunCommand(
             commands,
             platform,
             programs,
@@ -75,8 +75,7 @@ class TFLiteFramework(FrameworkBase):
             shared_libs,
             preprocess_files,
             main_command,
-        )
-        if cmds:
+        ):
             return cmds
 
         # the following is for backward compatibility purpose
@@ -87,12 +86,13 @@ class TFLiteFramework(FrameworkBase):
             input_shape = ",".join(str(a) for a in test["inputs"][layer]["shapes"][0])
         cmd = [
             programs["program"],
-            "--graph={}".format(model_files["graph"]),
-            "--warmup_runs={}".format(test["warmup"]),
-            "--num_runs={}".format(test["iter"]),
-            "--input_layer={}".format(input),
-            "--input_layer_shape={}".format(input_shape),
+            f'--graph={model_files["graph"]}',
+            f'--warmup_runs={test["warmup"]}',
+            f'--num_runs={test["iter"]}',
+            f"--input_layer={input}",
+            f"--input_layer_shape={input_shape}",
         ]
+
 
         cmd = [str(s) for s in cmd]
         return cmd
@@ -130,27 +130,28 @@ class TFLiteFramework(FrameworkBase):
             pattern = re.compile(
                 r"^count=([\d|\.]+) first=([\d|\.]+) curr=([\d|\.]+) min=([\d|\.]+) max=([\d|\.]+) avg=([\d|\.]+) std=([\d|\.]+)"
             )
-            match = pattern.match(data)
-            if match:
+            if match := pattern.match(data):
                 r = {
-                    "count": int(match.group(1)),
-                    "min": float(match.group(4)),
-                    "max": float(match.group(5)),
-                    "avg": float(match.group(6)),
-                    "std": float(match.group(7)),
+                    "count": int(match[1]),
+                    "min": float(match[4]),
+                    "max": float(match[5]),
+                    "avg": float(match[6]),
+                    "std": float(match[7]),
                 }
+
             else:
                 pattern = re.compile(r"^count=(\d+) curr=(\d+)")
                 match = pattern.match(data)
-                assert match, "No data is collected for {}".format(data)
+                assert match, f"No data is collected for {data}"
 
                 r = {
-                    "count": int(match.group(1)),
-                    "min": float(match.group(2)),
-                    "max": float(match.group(2)),
-                    "avg": float(match.group(2)),
+                    "count": int(match[1]),
+                    "min": float(match[2]),
+                    "max": float(match[2]),
+                    "avg": float(match[2]),
                     "std": 0,
                 }
+
             results["NET latency"] = {
                 "type": "NET",
                 "unit": "us",
@@ -182,27 +183,28 @@ class TFLiteFramework(FrameworkBase):
                 match = pattern.match(row)
                 if not match:
                     break
-                type = match.group(9)
-                kind = match.group(1)
-                avg = float(match.group(4)) * 1000
-                results[type + " latency"] = {
+                type = match[9]
+                kind = match[1]
+                avg = float(match[4]) * 1000
+                results[f"{type} latency"] = {
                     "type": type,
                     "unit": "us",
                     "metric": "latency",
                     "summary": {"mean": avg},
                 }
+
                 if kind in types_table:
                     types_table[kind] += avg
                 else:
                     types_table[kind] = avg
                 i = i + 1
             # Write the accumulated operator types
-            for k in types_table:
-                v = types_table[k]
-                results[k + " latency"] = {
+            for k, v in types_table.items():
+                results[f"{k} latency"] = {
                     "type": k,
                     "unit": "us",
                     "metric": "latency",
                     "summary": {"mean": v},
                 }
+
         return i

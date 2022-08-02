@@ -49,22 +49,26 @@ class IOSPlatformTest(unittest.TestCase):
             self.platform = IOSPlatform(self.tempdir, idb)
 
     def _list_dir_for_preprocess(self, app_dir):
-        self.assertEqual(app_dir, self.tempdir + "/Payload")
+        self.assertEqual(app_dir, f"{self.tempdir}/Payload")
         return ["TestDir.app"]
 
     def _process_run_for_preprocess(self, args):
-        app = self.tempdir + "/Payload/TestDir.app"
+        app = f"{self.tempdir}/Payload/TestDir.app"
         self.assertTrue(
-            args == ["osascript", "-e", 'id of app "' + app + '"']
-            or args == ["unzip", "-o", "-d", self.tempdir, "test_program.ipa"]
+            args
+            in [
+                ["osascript", "-e", 'id of app "' + app + '"'],
+                ["unzip", "-o", "-d", self.tempdir, "test_program.ipa"],
+            ]
         )
+
         return ["com.facebook.test"], ""
 
     def _set_bundle_id_for_preprocess(self, bundle_id):
         self.assertEqual(bundle_id, "com.facebook.test")
 
     def _idb_run_for_preprocess(self, args):
-        app = self.tempdir + "/Payload/TestDir.app"
+        app = f"{self.tempdir}/Payload/TestDir.app"
         self.assertEqual(args, ["--bundle", app, "--uninstall"])
 
     def test_preprocess(self):
@@ -83,15 +87,14 @@ class IOSPlatformTest(unittest.TestCase):
             self.platform.preprocess(programs=programs)
 
     def _push_for_run_benchmark(self, src, tgt):
-        sample = open("test_argument_file.json")
-        sample_data = json.load(sample)
+        with open("test_argument_file.json") as sample:
+            sample_data = json.load(sample)
 
-        test = open(src)
-        test_data = json.load(test)
+            test = open(src)
+            test_data = json.load(test)
 
-        self.assertEqual(sample_data, test_data)
+            self.assertEqual(sample_data, test_data)
 
-        sample.close()
         test.close()
 
     def _idb_run_for_run_benchmark(self, *args, **kwargs):

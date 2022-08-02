@@ -86,11 +86,7 @@ class LabDriver(object):
         setLoggerLevel(self.args.logger_level)
 
     def run(self):
-        if (
-            not self.args.lab
-            and not self.args.remote
-            and not "--adhoc" not in self.args
-        ):
+        if not self.args.lab and not self.args.remote and "--adhoc" in self.args:
             assert self.args.benchmark_file, "--benchmark_file (-b) must be specified"
 
         if self.args.benchmark_file and not self.args.remote:
@@ -160,10 +156,7 @@ class LabDriver(object):
                 )
             app_class = RunLab
         elif self.args.custom_binary or self.args.pre_built_binary:
-            if self.args.custom_binary:
-                binary = self.args.custom_binary
-            else:
-                binary = self.args.pre_built_binary
+            binary = self.args.custom_binary or self.args.pre_built_binary
             repo_info = {
                 "treatment": {"program": binary, "commit": "-1", "commit_time": 0}
             }
@@ -175,10 +168,7 @@ class LabDriver(object):
             ]
             app_class = BenchmarkDriver
         else:
-            if self.args.user_string:
-                usr_string = self.args.user_string
-            else:
-                usr_string = os.environ["USER"]
+            usr_string = self.args.user_string or os.environ["USER"]
             unique_args = [
                 "--benchmark_file",
                 self.args.benchmark_file,
@@ -189,13 +179,19 @@ class LabDriver(object):
 
         raw_args = []
         raw_args.extend(unique_args)
-        raw_args.extend(["--root_model_dir", self.args.root_model_dir])
-        raw_args.extend(["--logger_level", self.args.logger_level])
+        raw_args.extend(
+            [
+                "--root_model_dir",
+                self.args.root_model_dir,
+                "--logger_level",
+                self.args.logger_level,
+            ]
+        )
+
         raw_args.extend(self.unknowns)
-        getLogger().info("Running {} with raw_args {}".format(app_class, raw_args))
+        getLogger().info(f"Running {app_class} with raw_args {raw_args}")
         app = app_class(raw_args=raw_args)
-        res = app.run()
-        if res:
+        if res := app.run():
             return res
 
 

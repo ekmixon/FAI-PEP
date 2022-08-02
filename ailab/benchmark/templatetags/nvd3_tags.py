@@ -75,9 +75,9 @@ def load_chart(chart_type, series, container, kw_extra=None, *args, **kwargs):
         ydata = series[key]
         axis_no = key.split("y")[1]
 
-        name = series["name" + axis_no] if series.get("name" + axis_no) else None
-        extra = series["extra" + axis_no] if series.get("extra" + axis_no) else {}
-        kwargs = series["kwargs" + axis_no] if series.get("kwargs" + axis_no) else {}
+        name = series[f"name{axis_no}"] if series.get(f"name{axis_no}") else None
+        extra = series[f"extra{axis_no}"] if series.get(f"extra{axis_no}") else {}
+        kwargs = series[f"kwargs{axis_no}"] if series.get(f"kwargs{axis_no}") else {}
 
         chart.add_serie(name=name, y=ydata, x=xdata, extra=extra, **kwargs)
 
@@ -148,48 +148,42 @@ def include_chart_jscss(static_dir="", css_dir="", js_dir=""):
     css_files_dirs = collections.OrderedDict()
     js_files_dirs = collections.OrderedDict()
 
-    css_files_dirs["nv.d3.min.css"] = "%s%snvd3/build/" % (
-        settings.STATIC_URL,
-        static_dir,
-    )
+    css_files_dirs[
+        "nv.d3.min.css"
+    ] = f"{settings.STATIC_URL}{static_dir}nvd3/build/"
 
-    js_files_dirs["d3.min.js"] = "%s%sd3/" % (settings.STATIC_URL, static_dir)
-    js_files_dirs["nv.d3.min.js"] = "%s%snvd3/build/" % (
-        settings.STATIC_URL,
-        static_dir,
-    )
+
+    js_files_dirs["d3.min.js"] = f"{settings.STATIC_URL}{static_dir}d3/"
+    js_files_dirs["nv.d3.min.js"] = f"{settings.STATIC_URL}{static_dir}nvd3/build/"
 
     if css_dir:
         if not css_dir.endswith("/"):
             css_dir += "/"
         for css_file in css_files_dirs:
-            css_files_dirs[css_file] = "%s%s%s" % (
-                settings.STATIC_URL,
-                static_dir,
-                css_dir,
-            )
+            css_files_dirs[css_file] = f"{settings.STATIC_URL}{static_dir}{css_dir}"
 
     if js_dir:
         if not js_dir.endswith("/"):
             js_dir += "/"
         for js_file in js_files_dirs:
-            js_files_dirs[js_file] = "%s%s%s" % (
-                settings.STATIC_URL,
-                static_dir,
-                js_dir,
-            )
+            js_files_dirs[js_file] = f"{settings.STATIC_URL}{static_dir}{js_dir}"
 
     chart = NVD3Chart()
     chart.header_css = [
         '<link media="all" href="%s" type="text/css" rel="stylesheet" />\n' % h
         for h in (
-            "%s%s" % (path, css_file) for css_file, path in css_files_dirs.items()
+            f"{path}{css_file}" for css_file, path in css_files_dirs.items()
         )
     ]
 
+
     chart.header_js = [
-        '<script src="%s" type="text/javascript" charset="utf-8"></script>\n' % h
-        for h in ("%s%s" % (path, js_file) for js_file, path in js_files_dirs.items())
+        '<script src="%s" type="text/javascript" charset="utf-8"></script>\n'
+        % h
+        for h in (
+            f"{path}{js_file}" for js_file, path in js_files_dirs.items()
+        )
     ]
+
     chart.buildhtmlheader()
     return mark_safe(chart.htmlheader + "\n")

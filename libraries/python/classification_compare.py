@@ -49,10 +49,11 @@ class OutputCompare(object):
         self.args = parser.parse_args()
         assert os.path.isfile(
             self.args.benchmark_output
-        ), "Benchmark output file {} doesn't exist".format(self.args.benchmark_output)
-        assert os.path.isfile(self.args.labels), "Labels file {} doesn't exist".format(
+        ), f"Benchmark output file {self.args.benchmark_output} doesn't exist"
+
+        assert os.path.isfile(
             self.args.labels
-        )
+        ), f"Labels file {self.args.labels} doesn't exist"
 
     def getData(self, filename):
         num_entries = 0
@@ -94,23 +95,24 @@ class OutputCompare(object):
         }
         s = json.dumps(entry, sort_keys=True)
         if self.args.metric_keyword:
-            s = self.args.metric_keyword + " " + s
+            s = f"{self.args.metric_keyword} {s}"
         print(s)
         return entry
 
     def writeResult(self, results):
-        top = "top{}".format(str(self.args.top))
+        top = f"top{str(self.args.top)}"
         values = [item["predict"] for item in results]
         num_corrects = sum(values)
         percent = num_corrects * 100.0 / len(values)
-        output = {}
         res = self.writeOneResult(
-            values, num_corrects, "number_of_{}_corrects".format(top), "number"
+            values, num_corrects, f"number_of_{top}_corrects", "number"
         )
-        output[res["type"] + "_" + res["metric"]] = res
+
+        output = {res["type"] + "_" + res["metric"]: res}
         res = self.writeOneResult(
-            values, percent, "percent_of_{}_corrects".format(top), "percent"
+            values, percent, f"percent_of_{top}_corrects", "percent"
         )
+
         output[res["type"] + "_" + res["metric"]] = res
         if self.args.result_file:
             s = json.dumps(output, sort_keys=True, indent=2)

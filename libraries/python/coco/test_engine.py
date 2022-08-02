@@ -71,14 +71,14 @@ class TestEngine(object):
         self.index = 0
 
     def emptyResults(self, num_classes, num_images):
-        # all detections are collected into:
-        #    all_boxes[cls][image] = N x 5 array of detections in
-        #    (x1, y1, x2, y2, score)
-        ret = {
-            "all_boxes": [[[] for _ in range(num_images)] for _ in range(num_classes)]
+        return {
+            "all_boxes": [
+                [[] for _ in range(num_images)] for _ in range(num_classes)
+            ],
+            "all_segms": [
+                [[] for _ in range(num_images)] for _ in range(num_classes)
+            ],
         }
-        ret["all_segms"] = [[[] for _ in range(num_images)] for _ in range(num_classes)]
-        return ret
 
     def extendResults(self, index, all_res, im_res):
         for j in range(1, len(im_res)):
@@ -90,9 +90,8 @@ class TestEngine(object):
             classid = int(classid)
             assert classid <= len(
                 all_boxes
-            ), "{} classid out of range!" "class id: {}, boxes: {}".format(
-                j, classid, boxes
-            )
+            ), f"{j} classid out of range!class id: {classid}, boxes: {boxes}"
+
             if type(all_boxes[classid][index]) is np.ndarray:
                 all_boxes[classid][index] = np.vstack(
                     (all_boxes[classid][index], boxes[j])
@@ -106,16 +105,16 @@ class TestEngine(object):
             classid = int(classid)
             assert classid <= len(
                 all_segms
-            ), "{} classid out of range!" "class id: {}, segms: {}".format(
-                j, classid, im_masks_rle
-            )
+            ), f"{j} classid out of range!class id: {classid}, segms: {im_masks_rle}"
+
             all_segms[classid][index].append(im_masks_rle[j])
 
     def evaluateResults(self):
         for i in range(self.args.limit_files):
             filename = os.path.join(
-                self.args.input_dir, self.args.result_prefix + "_" + str(i) + ".pkl"
+                self.args.input_dir, f"{self.args.result_prefix}_{str(i)}.pkl"
             )
+
             with open(filename, "r") as f:
                 results = pickle.load(f)
             for ret in results:

@@ -49,17 +49,15 @@ parser.add_argument("--result-file", help="Write the prediction result to a file
 class AggregateOutputs(object):
     def __init__(self):
         self.args = parser.parse_args()
-        assert os.path.isdir(self.args.dir), "Directory {} doesn't exist".format(
-            self.args.dir
-        )
+        assert os.path.isdir(self.args.dir), f"Directory {self.args.dir} doesn't exist"
 
     def _composeFilename(self, index):
-        return os.path.join(self.args.dir, self.args.prefix + "_" + str(index) + ".txt")
+        return os.path.join(self.args.dir, f"{self.args.prefix}_{str(index)}.txt")
 
     def _getOneOutput(self, index):
         filename = self._composeFilename(index)
         if not os.path.isfile(filename):
-            print("File {} does not exist".format(filename))
+            print(f"File {filename} does not exist")
             return None
         with open(filename, "r") as f:
             content = json.load(f)
@@ -84,14 +82,13 @@ class AggregateOutputs(object):
                     results[key]["values"].extend(value["values"])
         pattern = re.compile(r"(\w+)_of_top(\d+)_corrects")
         # finally patch up the summary
-        for res in results:
-            one_result = results[res]
+        for res, one_result in results.items():
             one_result["type"] = one_result["type"]
             values = one_result["values"]
             match = pattern.match(one_result["metric"])
             if not match:
                 continue
-            if match.group(1) == "number":
+            if match[1] == "number":
                 data = sum(values)
                 one_result["summary"] = {
                     "num_runs": len(values),
@@ -104,7 +101,7 @@ class AggregateOutputs(object):
                     "std": 0,
                     "MAD": 0,
                 }
-            elif match.group(1) == "percent":
+            elif match[1] == "percent":
                 data = sum(values) * 100.0 / len(values)
                 one_result["summary"] = {
                     "num_runs": len(values),
@@ -130,7 +127,7 @@ class AggregateOutputs(object):
             result = results[key]
             s = json.dumps(result, sort_keys=True)
             if self.args.metric_keyword:
-                s = self.args.metric_keyword + " " + s
+                s = f"{self.args.metric_keyword} {s}"
             print(s)
         if self.args.result_file:
             s = json.dumps(results, sort_keys=True, indent=2)

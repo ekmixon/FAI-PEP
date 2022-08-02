@@ -243,11 +243,11 @@ class BuildProgram(threading.Thread):
     def _buildProgram(self, tempdir):
         # build binary
         platform = self.args.platform
-        program = tempdir + "/program"
+        program = f"{tempdir}/program"
         if os.name == "nt":
-            program = program + ".exe"
+            program = f"{program}.exe"
         elif platform.startswith("ios"):
-            program = program + ".ipa"
+            program = f"{program}.ipa"
         if self.prebuilt_binary:
             program = self.prebuilt_binary
         elif self.args.buck_target:
@@ -277,7 +277,7 @@ class BuildProgram(threading.Thread):
                 allfiles = [os.path.join(filedir, f) for f in os.listdir(filedir)]
             for fn in allfiles:
                 filename, _ = self.file_handler.uploadFile(fn, None, None, False)
-                getLogger().info("program: {}".format(filename))
+                getLogger().info(f"program: {filename}")
                 self.filenames[os.path.basename(fn)] = filename
             # main program needs to be in
             self.filenames["program"] = self.filenames[os.path.basename(program)]
@@ -296,7 +296,7 @@ class RunRemote(object):
             ), "Either server_addr or benchmark_db_entry must be specified"
             while self.args.server_addr[-1] == "/":
                 self.args.server_addr = self.args.server_addr[:-1]
-            self.args.benchmark_db_entry = self.args.server_addr + "/benchmark/"
+            self.args.benchmark_db_entry = f"{self.args.server_addr}/benchmark/"
         self.db = DBDriver(
             self.args.benchmark_db,
             self.args.app_id,

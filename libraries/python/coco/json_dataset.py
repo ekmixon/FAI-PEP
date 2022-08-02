@@ -74,11 +74,11 @@ class JsonDataset(object):
                 IM_DIR: ds_im_dir,
                 ANN_FN: ds_ann,
             }
-        assert name in full_datasets.keys(), "Unknown dataset name {}".format(name)
-        logger.debug("Creating: {}".format(name))
+        assert name in full_datasets, f"Unknown dataset name {name}"
+        logger.debug(f"Creating: {name}")
 
         dataset = full_datasets[name]
-        logger.info("Loading dataset {}:\n{}".format(name, dataset))
+        logger.info(f"Loading dataset {name}:\n{dataset}")
 
         self.name = name
         self.image_directory = dataset[IM_DIR]
@@ -86,9 +86,7 @@ class JsonDataset(object):
 
         # general dataset
         self.COCO = COCO(dataset[ANN_FN])
-        logger.info(
-            "Dataset={}, Number of images={}".format(name, len(self.COCO.getImgIds()))
-        )
+        logger.info(f"Dataset={name}, Number of images={len(self.COCO.getImgIds())}")
 
         category_ids = self.COCO.getCatIds()
         categories = [c["name"] for c in self.COCO.loadCats(category_ids)]

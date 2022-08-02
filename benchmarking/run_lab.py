@@ -147,10 +147,9 @@ parser.add_argument(
     "--device_monitor_interval",
     type=valid_dm_interval,
     default=str(default_dm_interval),
-    help="Device monitoring interval in seconds. Minimum {}s, default {}s.".format(
-        minimum_dm_interval, default_dm_interval
-    ),
+    help=f"Device monitoring interval in seconds. Minimum {minimum_dm_interval}s, default {default_dm_interval}s.",
 )
+
 parser.add_argument(
     "--shared_libs",
     help="Pass the shared libs that the framework depends on, "
@@ -253,12 +252,11 @@ class runAsync(object):
         return self.run()
 
     def run(self):
-        handlers = []
         log_capture_string = StringIO()
         ch = logging.StreamHandler(log_capture_string)
         ch.setLevel(logging.DEBUG)
         getLogger().addHandler(ch)
-        handlers.append(ch)
+        handlers = [ch]
         # if enabled realtime logger will also update the log entry at regualr intervals.
         if self.args.rt_logging:
             dbh = DBLogUpdateHandler(
@@ -268,10 +266,9 @@ class runAsync(object):
             getLogger().addHandler(dbh)
             handlers.append(dbh)
             getLogger().info(
-                "Realtime logging enabled with {}s updates.".format(
-                    self.args.rt_logging_interval
-                )
+                f"Realtime logging enabled with {self.args.rt_logging_interval}s updates."
             )
+
         try:
             self._setFramework()
             with LOCK:
@@ -333,35 +330,33 @@ class runAsync(object):
             # pass the device hash as well as type
             device = {"kind": self.job["device"], "hash": self.job["hash"]}
             device_str = json.dumps(device)
-            raw_args = []
-            raw_args.extend(
-                [
-                    "--benchmark_file",
-                    self.job["benchmarks"]["benchmark"]["content"],
-                    "--cooldown",
-                    str(self.args.cooldown),
-                    "--device",
-                    device_str,
-                    "--framework",
-                    self.job["framework"],
-                    "--info",
-                    json.dumps(info),
-                    "--model_cache",
-                    self.args.model_cache,
-                    "--platform",
-                    self.args.platform,
-                    "--remote_access_token",
-                    self.args.remote_access_token,
-                    "--root_model_dir",
-                    self.args.root_model_dir,
-                    "--simple_local_reporter",
-                    self.tempdir,
-                    "--user_identifier",
-                    str(self.job["identifier"]),
-                    "--user_string",
-                    self.job.get("user"),
-                ]
-            )
+            raw_args = [
+                "--benchmark_file",
+                self.job["benchmarks"]["benchmark"]["content"],
+                "--cooldown",
+                str(self.args.cooldown),
+                "--device",
+                device_str,
+                "--framework",
+                self.job["framework"],
+                "--info",
+                json.dumps(info),
+                "--model_cache",
+                self.args.model_cache,
+                "--platform",
+                self.args.platform,
+                "--remote_access_token",
+                self.args.remote_access_token,
+                "--root_model_dir",
+                self.args.root_model_dir,
+                "--simple_local_reporter",
+                self.tempdir,
+                "--user_identifier",
+                str(self.job["identifier"]),
+                "--user_string",
+                self.job.get("user"),
+            ]
+
             if self.job["framework"] != "generic":
                 raw_args.extend(["--remote_reporter", self.args.remote_reporter])
             if self.args.shared_libs:
@@ -388,7 +383,7 @@ class runAsync(object):
         """Save benchmark config to file"""
         content = self.job["benchmarks"]["benchmark"]["content"]
         benchmark_str = json.dumps(content)
-        path = self.tempdir + "benchmark"
+        path = f"{self.tempdir}benchmark"
         with open(path, "w") as f:
             f.write(benchmark_str)
         self.job["benchmarks"]["benchmark"]["content"] = path
@@ -420,7 +415,7 @@ class runAsync(object):
                 and bin_name == "program"
                 and not program_location.endswith(".ipa")
             ):
-                new_location = program_location + ".ipa"
+                new_location = f"{program_location}.ipa"
                 os.rename(program_location, new_location)
                 program_location = new_location
             os.chmod(program_location, stat.S_IXUSR | stat.S_IRUSR | stat.S_IWUSR)
@@ -521,7 +516,7 @@ class runAsync(object):
         for d in dirs:
             f = os.path.join(*[output_dir, d, "data.txt"])
             if not os.path.isfile(f):
-                getLogger().error("The output {} doesn't exist".format(f))
+                getLogger().error(f"The output {f} doesn't exist")
                 continue
             with open(f, "r") as file:
                 content = json.load(file)
@@ -536,7 +531,7 @@ class runAsync(object):
 
     def _handlePowerData(self, filename):
         if not os.path.isfile(filename):
-            getLogger().error("Power data file " "{} doesn't exist".format(filename))
+            getLogger().error(f"Power data file {filename} doesn't exist")
             return
         app = UploadDownloadFiles(self.args)
         file_link = app.upload(file=filename, permanent=False)
@@ -546,10 +541,7 @@ class runAsync(object):
 
     def didUserRequestJobKill(self):
         jobs = self.db.statusBenchmarks(self.job["identifier"])
-        for job in jobs:
-            if job["status"] == "KILLED":
-                return True
-        return False
+        return any(job["status"] == "KILLED" for job in jobs)
 
     def killJob(self):
         setRunKilled(True)
@@ -567,7 +559,7 @@ class RunLab(object):
             ), "Either server_addr or benchmark_db_entry must be specified"
             while self.args.server_addr[-1] == "/":
                 self.args.server_addr = self.args.server_addr[:-1]
-            self.args.benchmark_db_entry = self.args.server_addr + "/benchmark/"
+            self.args.benchmark_db_entry = f"{self.args.server_addr}/benchmark/"
         self.db = DBDriver(
             self.args.benchmark_db,
             self.args.app_id,
@@ -616,10 +608,11 @@ class RunLab(object):
                     hashes.append(hash)
         hashes = ",".join(hashes)
         devices = ",".join(devices)
-        jobs = []
-        if len(devices) > 0:
-            jobs = self.db.claimBenchmarks(claimer_id, devices, hashes)
-        return jobs
+        return (
+            self.db.claimBenchmarks(claimer_id, devices, hashes)
+            if devices != ""
+            else []
+        )
 
     def _selectBenchmarks(self, jobs):
         remaining_jobs = []
@@ -628,10 +621,12 @@ class RunLab(object):
             device_kind = job["device"]
             if device_kind not in self.devices:
                 getLogger().error(
-                    "Retrieved job for device "
-                    "{} ".format(device_kind) + "cannot be run on server "
-                    "{}".format(self.args.claimer_id)
+                    (
+                        f"Retrieved job for device {device_kind} "
+                        + f"cannot be run on server {self.args.claimer_id}"
+                    )
                 )
+
                 remaining_jobs.append(job)
             else:
                 for hash in self.devices[device_kind]:
@@ -705,16 +700,9 @@ class RunLab(object):
 
         # output benchmark log in main thread.
         getLogger().info(
-            "\n{}\n\nBenchmark:\t\t{}\nJob:\t\t\t{}\nDevice Kind:\t\t{}\nDevice Hash:\t\t{}\n{}\n\n{}".format(
-                "#" * 80,
-                job["identifier"],
-                job["id"],
-                device["kind"],
-                device["hash"],
-                job["log"],
-                "#" * 80,
-            )
+            f'\n{"#" * 80}\n\nBenchmark:\t\t{job["identifier"]}\nJob:\t\t\t{job["id"]}\nDevice Kind:\t\t{device["kind"]}\nDevice Hash:\t\t{device["hash"]}\n{job["log"]}\n\n{"#" * 80}'
         )
+
 
         with LOCK:
             self._coolDown(device, force_reboot=job["status"] != "DONE")

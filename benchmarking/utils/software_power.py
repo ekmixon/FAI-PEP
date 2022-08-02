@@ -15,21 +15,21 @@ class PowerUtil:
         self.data.append(self.platform.currentPower())
         self.platform.usb_controller.disconnect(self.platform.platform_hash)
 
-        getLogger().info("Sleeping for {}".format(self.duration))
+        getLogger().info(f"Sleeping for {self.duration}")
         time.sleep(self.duration)
 
         self.platform.usb_controller.connect(self.platform.platform_hash)
         time.sleep(2)  # device needs a second to connect
         self.data.append(self.platform.currentPower())
 
-        getLogger().info("Done collecting {}".format(self.data))
-        result = {}
-        result["software_power"] = _composeStructuredData(
-            self.data,
-            self.platform.powerInfo["metric"],
-            self.platform.powerInfo["unit"],
-        )
-        return result
+        getLogger().info(f"Done collecting {self.data}")
+        return {
+            "software_power": _composeStructuredData(
+                self.data,
+                self.platform.powerInfo["metric"],
+                self.platform.powerInfo["unit"],
+            )
+        }
 
 
 def _composeStructuredData(data, metric, unit):

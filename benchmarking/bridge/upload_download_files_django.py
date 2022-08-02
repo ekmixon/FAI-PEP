@@ -17,8 +17,8 @@ class UploadDownloadFilesDjango(UploadDownloadFilesBase):
     def upload(self, **kwargs):
         path = kwargs["file"]
         if self.server_addr:
-            storage_addr = self.server_addr + "/upload/"
-            getLogger().info("Uploading {} to {}".format(path, storage_addr))
+            storage_addr = f"{self.server_addr}/upload/"
+            getLogger().info(f"Uploading {path} to {storage_addr}")
             filename = os.path.basename(path)
 
             with open(path, "rb") as f:
@@ -29,7 +29,7 @@ class UploadDownloadFilesDjango(UploadDownloadFilesBase):
         url = ""
         if result_json["status"] == "success":
             url = os.path.join(self.server_addr, result_json["path"])
-        getLogger().info("File has been uploaded to {}".format(url))
+        getLogger().info(f"File has been uploaded to {url}")
         return url
 
     def download(self, **kwargs):

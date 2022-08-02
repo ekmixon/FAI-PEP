@@ -23,9 +23,7 @@ from utils.custom_logger import getLogger
 def collectPowerData(hash, sample_time, voltage, num_iters, monsoon_map=None):
     serialno = _getSerialno(hash, monsoon_map)
     if serialno is not None:
-        getLogger().info(
-            "Collecting current from monsoon {} for {}".format(str(serialno), hash)
-        )
+        getLogger().info(f"Collecting current from monsoon {str(serialno)} for {hash}")
     # wait till all actions are performed
     sleep(1)
     Mon = HVPM.Monsoon()
@@ -58,25 +56,25 @@ def collectPowerData(hash, sample_time, voltage, num_iters, monsoon_map=None):
     sleep(1)
     # 200 us per sample
     num_samples = sample_time / 0.0002
-    getLogger().info("startSampling on {}".format(filename))
+    getLogger().info(f"startSampling on {filename}")
     engine.startSampling(num_samples)
 
     engine.disableCSVOutput()
-    getLogger().info("Written power data to file: {}".format(filename))
+    getLogger().info(f"Written power data to file: {filename}")
 
     # retrieve statistics from the power data
     getLogger().info("Reading data from CSV file")
     power_data = _getPowerData(filename)
     getLogger().info(
-        "Calculating the benchmark data range from "
-        "{} data points".format(len(power_data))
+        f"Calculating the benchmark data range from {len(power_data)} data points"
     )
+
     start_idx, end_idx = _calculatePowerDataRange(power_data)
-    getLogger().info("Collecting data from " "{} to {}".format(start_idx, end_idx))
+    getLogger().info(f"Collecting data from {start_idx} to {end_idx}")
     getLogger().info(
-        "Benchmark time: "
-        "{} - {} s".format(power_data[start_idx]["time"], power_data[end_idx]["time"])
+        f'Benchmark time: {power_data[start_idx]["time"]} - {power_data[end_idx]["time"]} s'
     )
+
     data = _retrievePowerData(power_data, start_idx, end_idx, num_iters)
     data["power_data"] = filename
     return data
@@ -91,13 +89,13 @@ def _getPowerData(filename):
             line = f.readline()
             # only the main output channel is enabled
             pattern = re.compile(r"^([\d|\.]+),([\d|\.]+),([\d|\.]+),")
-            match = pattern.match(line)
-            if match:
+            if match := pattern.match(line):
                 new_line = {
-                    "time": float(match.group(1)),
-                    "current": float(match.group(2)),
-                    "voltage": float(match.group(3)),
+                    "time": float(match[1]),
+                    "current": float(match[2]),
+                    "voltage": float(match[3]),
                 }
+
                 lines.append(new_line)
     return lines
 
@@ -158,12 +156,15 @@ def _calculatePowerDataRange(power_data):
             )
         # get the last entry below threshold
         end = i
-        while end > i - WINDOW_SIZE and (power_data[end - 1]["current"] < THRESHOLD):
+        while (
+            end > end - WINDOW_SIZE
+            and power_data[end - 1]["current"] < THRESHOLD
+        ):
             end = end - 1
         if start < num and end < num:
             ranges.append({"start": start, "end": end})
 
-    if len(ranges) == 0:
+    if not ranges:
         return -1, -1
     # get the max range of all collected ranges
     max_range = ranges[0]
@@ -208,10 +209,10 @@ def _retrievePowerData(power_data, start_idx, end_idx, num_iters):
     data["energy"] = _composeStructuredData(energy_per_inference, "energy", "mJ")
     data["power"] = _composeStructuredData(power, "power", "mW")
     data["latency"] = _composeStructuredData(latency, "latency", "uS")
-    getLogger().info("Base current: {} mA".format(base_current))
-    getLogger().info("Energy per inference: {} mJ".format(energy_per_inference))
-    getLogger().info("Power: {} mW".format(power))
-    getLogger().info("Latency per inference: {} uS".format(latency))
+    getLogger().info(f"Base current: {base_current} mA")
+    getLogger().info(f"Energy per inference: {energy_per_inference} mJ")
+    getLogger().info(f"Power: {power} mW")
+    getLogger().info(f"Latency per inference: {latency} uS")
     return data
 
 

@@ -42,12 +42,11 @@ class IOSDriver(object):
         )
         devices = {}
         for row in rows:
-            match = pattern.match(row)
-            if match:
-                hash = match.group(1)
-                model = match.group(2)
-                abi = match.group(3)
-                os_version = match.group(4)
+            if match := pattern.match(row):
+                hash = match[1]
+                model = match[2]
+                abi = match[3]
+                os_version = match[4]
                 devices[hash] = {"model": model, "abi": abi, "os_version": os_version}
         return devices
 

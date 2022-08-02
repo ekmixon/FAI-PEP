@@ -44,13 +44,11 @@ class IOSPlatform(PlatformBase):
 
     def getKind(self):
         if self.platform_model and self.platform_os_version:
-            return "{}-{}".format(self.platform_model, self.platform_os_version)
+            return f"{self.platform_model}-{self.platform_os_version}"
         return self.platform
 
     def getOS(self):
-        if self.platform_os_version:
-            return "iOS {}".format(self.platform_os_version)
-        return "iOS"
+        return f"iOS {self.platform_os_version}" if self.platform_os_version else "iOS"
 
     def preprocess(self, *args, **kwargs):
         assert "programs" in kwargs, "Must have programs specified"
@@ -117,15 +115,14 @@ class IOSPlatform(PlatformBase):
         if platform_args.get("enable_profiling", False):
             # attempt to run with profiling, else fallback to standard run
             try:
-                args = " ".join(["--" + x + " " + arguments[x] for x in arguments])
-                xctrace = getProfilerByUsage(
+                args = " ".join([f"--{x} {arguments[x]}" for x in arguments])
+                if xctrace := getProfilerByUsage(
                     "ios",
                     None,
                     platform=self,
                     model_name=platform_args.get("model_name", None),
                     args=args,
-                )
-                if xctrace:
+                ):
                     f = xctrace.start()
                     output, meta = f.result()
                     if not output or not meta:
@@ -141,17 +138,13 @@ class IOSPlatform(PlatformBase):
         meta = {}
 
         if arguments:
-            run_cmd += [
-                "--args",
-                " ".join(["--" + x + " " + arguments[x] for x in arguments]),
-            ]
+            run_cmd += ["--args", " ".join([f"--{x} {arguments[x]}" for x in arguments])]
         # the command may fail, but the err_output is what we need
         log_screen = self.util.run(run_cmd, **platform_args)
         return log_screen, meta
 
     def rebootDevice(self):
-        success = self.util.reboot()
-        if success:
+        if success := self.util.reboot():
             time.sleep(180)
 
     def killProgram(self, program):
@@ -159,8 +152,7 @@ class IOSPlatform(PlatformBase):
         pass
 
     def currentPower(self):
-        result = self.util.batteryLevel()
-        return result
+        return self.util.batteryLevel()
 
     @property
     def powerInfo(self):

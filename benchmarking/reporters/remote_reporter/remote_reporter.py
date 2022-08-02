@@ -42,14 +42,13 @@ class RemoteReporter(ReporterBase):
         """
         result = {}
         for dictionary in dict_args:
-            result.update(dictionary)
+            result |= dictionary
         return result
 
     def _getRemoteInfo(self):
         endpoint = self.remote_reporter.strip().split("|")
         assert len(endpoint) == 2, "Category not speied in remote endpoint"
-        res = {}
-        res["url"] = endpoint[0].strip()
+        res = {"url": endpoint[0].strip()}
         if len(res["url"]) < 5 or res["url"][:4] != "http":
             res["url"] = "https://" + res["url"]
         res["category"] = endpoint[1].strip()
@@ -119,8 +118,7 @@ class RemoteReporter(ReporterBase):
                 meta.pop(key, None)
                 summary[key] = value
             except BaseException:
-                getLogger().warning("{} cannot be converted into int".format(meta[key]))
-                pass
+                getLogger().warning(f"{meta[key]} cannot be converted into int")
 
     def _updateSummaryData(self, data, summary, prefix):
         for k in data:

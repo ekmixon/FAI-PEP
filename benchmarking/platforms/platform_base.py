@@ -48,9 +48,9 @@ class PlatformBase(object):
                 with open(hash_platform_mapping) as f:
                     self.hash_platform_mapping = json.load(f)
             except OSError as e:
-                getLogger().info("OSError: {}".format(e))
+                getLogger().info(f"OSError: {e}")
             except ValueError as e:
-                getLogger().info("Invalid json: {}".format(e))
+                getLogger().info(f"Invalid json: {e}")
         else:
             # otherwise read from internal
             try:
@@ -68,9 +68,9 @@ class PlatformBase(object):
                 with open(device_name_mapping) as f:
                     self.device_name_mapping = json.load(f)
             except OSError as e:
-                getLogger().info("OSError: {}".format(e))
+                getLogger().info(f"OSError: {e}")
             except ValueError as e:
-                getLogger().info("Invalid json: {}".format(e))
+                getLogger().info(f"Invalid json: {e}")
         else:
             # otherwise read from internal
             try:
@@ -118,7 +118,7 @@ class PlatformBase(object):
     def getMangledName(self):
         name = self.platform
         if self.platform_hash:
-            name = name + " ({})".format(self.platform_hash)
+            name = name + f" ({self.platform_hash})"
         return name
 
     def rebootDevice(self):
@@ -144,15 +144,13 @@ class PlatformBase(object):
                 self.util.push(files, target_file)
             return target_file
         elif isinstance(files, list):
-            target_files = []
-            for f in files:
-                target_files.append(self.copyFilesToPlatform(f, target_dir, copy_files))
-            return target_files
+            return [self.copyFilesToPlatform(f, target_dir, copy_files) for f in files]
         elif isinstance(files, dict):
-            d = {}
-            for f in files:
-                d[f] = self.copyFilesToPlatform(files[f], target_dir, copy_files)
-            return d
+            return {
+                f: self.copyFilesToPlatform(files[f], target_dir, copy_files)
+                for f in files
+            }
+
         else:
             raise AssertionError("Cannot reach here")
         return None
@@ -166,9 +164,7 @@ class PlatformBase(object):
             self.util.deleteFile(files)
             return target_file
         elif isinstance(files, list):
-            output_files = []
-            for f in files:
-                output_files.append(self.moveFilesFromPlatform(f, target_dir))
+            output_files = [self.moveFilesFromPlatform(f, target_dir) for f in files]
             return output_files
         elif isinstance(files, dict):
             output_files = {}
@@ -219,9 +215,9 @@ class PlatformBase(object):
                 if value[:2] == "--":
                     value = "true"
                 else:
-                    i = i + 1
+                    i += 1
                 arguments[key] = value
             elif entry != "{program}":
-                getLogger().warning("Failed to get argument {}".format(entry[i]))
-            i = i + 1
+                getLogger().warning(f"Failed to get argument {entry[i]}")
+            i += 1
         return arguments

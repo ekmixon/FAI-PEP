@@ -154,7 +154,7 @@ def _runIndividual(interval, regression, ab_testing):
 class ExecutablesBuilder(threading.Thread):
     def __init__(self, repo, work_queue, queue_lock, **kwargs):
         threading.Thread.__init__(self)
-        raw_args = kwargs.get("raw_args", None)
+        raw_args = kwargs.get("raw_args")
         self.args, self.unknowns = parser.parse_known_args(raw_args)
         self.repo = repo
         self.work_queue = work_queue
@@ -182,9 +182,12 @@ class ExecutablesBuilder(threading.Thread):
 
     def _saveOneCommitExecutable(self, platform):
         getLogger().info(
-            "Building executable on {} ".format(platform)
-            + "@ {}".format(self.current_commit_hash)
+            (
+                f"Building executable on {platform} "
+                + f"@ {self.current_commit_hash}"
+            )
         )
+
         same_host = self.args.same_host
         if same_host:
             self.queue_lock.acquire()
@@ -199,12 +202,10 @@ class ExecutablesBuilder(threading.Thread):
             self.queue_lock.release()
 
     def _buildOneCommitExecutable(self, platform, commit_hash):
-        repo_info = {}
         repo_info_treatment = self._setupRepoStep(platform, commit_hash)
         if repo_info_treatment is None:
             return None
-        repo_info["treatment"] = repo_info_treatment
-
+        repo_info = {"treatment": repo_info_treatment}
         if self.args.ab_testing:
             # only build control on regression detection
             # figure out the base commit. It is the first commit in the week
@@ -217,9 +218,7 @@ class ExecutablesBuilder(threading.Thread):
                 return None
             repo_info["control"] = repo_info_control
 
-        # Pass meta file from build to benchmark
-        meta = getMeta(self.args, platform)
-        if meta:
+        if meta := getMeta(self.args, platform):
             assert "meta" not in self.info, "info field already has a meta field"
             self.info["meta"] = meta
 
@@ -285,18 +284,17 @@ class ExecutablesBuilder(threading.Thread):
             return None
 
     def _setupRepoStep(self, platform, commit):
-        repo_info = {}
-        repo_info["commit"] = self.repo.getCommitHash(commit)
+        repo_info = {"commit": self.repo.getCommitHash(commit)}
         repo_info["commit_time"] = self.repo.getCommitTime(repo_info["commit"])
         return repo_info if self._buildProgram(platform, repo_info) else None
 
     def _buildProgram(self, platform, repo_info):
         directory = getDirectory(repo_info["commit"], repo_info["commit_time"])
-        program = self.args.framework + "_benchmark"
+        program = f"{self.args.framework}_benchmark"
         if os.name == "nt":
-            program = program + ".exe"
+            program = f"{program}.exe"
         elif platform.startswith("ios"):
-            program = program + ".ipa"
+            program = f"{program}.ipa"
         dst = os.path.join(
             self.args.exec_dir, self.args.framework, platform, directory, program
         )
@@ -308,12 +306,11 @@ class ExecutablesBuilder(threading.Thread):
             self.args.interval, self.args.regression, self.args.ab_testing
         ) and os.path.isfile(dst):
             return True
-        else:
-            result = self._buildProgramPlatform(repo_info, dst, platform)
-            for fn in os.listdir(filedir):
-                if fn != program:
-                    repo_info["programs"][fn] = {"location": os.path.join(filedir, fn)}
-            return result
+        result = self._buildProgramPlatform(repo_info, dst, platform)
+        for fn in os.listdir(filedir):
+            if fn != program:
+                repo_info["programs"][fn] = {"location": os.path.join(filedir, fn)}
+        return result
 
     def _buildProgramPlatform(self, repo_info, dst, platform):
         self.repo.checkout(repo_info["commit"])
@@ -356,12 +353,11 @@ class ExecutablesBuilder(threading.Thread):
             if unix_datetime >= start_of_week:
                 return commit_hash
         raise AssertionError("Cannot find the control commit")
-        return None
 
 
 class RepoDriver(object):
     def __init__(self, **kwargs):
-        raw_args = kwargs.get("raw_args", None)
+        raw_args = kwargs.get("raw_args")
         self.args, self.unknowns = parser.parse_known_args(raw_args)
         self.repo = getRepo(self.args.repo, self.args.repo_dir)
         self.queue_lock = threading.Lock()
@@ -372,9 +368,9 @@ class RepoDriver(object):
 
     def run(self):
         getLogger().info(
-            "Start benchmark run @ %s"
-            % datetime.datetime.now().strftime("%Y_%m_%d_%H_%M")
+            f'Start benchmark run @ {datetime.datetime.now().strftime("%Y_%m_%d_%H_%M")}'
         )
+
         self.executables_builder.start()
         self._runBenchmarkSuites()
         return getRunStatus()
@@ -422,8 +418,10 @@ class RepoDriver(object):
             with open(self.args.commit_file, "w") as file:
                 file.write(repo_info["treatment"]["commit"])
         getLogger().info(
-            "One benchmark run {} for ".format("successful" if ret == 0 else "failed")
-            + repo_info["treatment"]["commit"]
+            (
+                f'One benchmark run {"successful" if ret == 0 else "failed"} for '
+                + repo_info["treatment"]["commit"]
+            )
         )
 
     def _getRawArgs(self, repo_info):
@@ -439,23 +437,20 @@ class RepoDriver(object):
             del unknowns[info_idx + 1]
             del unknowns[info_idx]
         info = json.dumps(repo_info)
-        raw_args = []
-        raw_args.extend(
-            [
-                "--platform",
-                getString(platform),
-                "--framework",
-                getString(self.args.framework),
-                "--info",
-                info,
-            ]
-        )
+        raw_args = [
+            "--platform",
+            getString(platform),
+            "--framework",
+            getString(self.args.framework),
+            "--info",
+            info,
+        ]
+
         raw_args.extend(unknowns)
         if self.args.env:
             raw_args.append("--env")
             env_vars = self.args.env.split()
-            for env_var in env_vars:
-                raw_args.append(env_var)
+            raw_args.extend(iter(env_vars))
         return raw_args
 
 

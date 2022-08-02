@@ -25,4 +25,4 @@ class WindowsPlatform(HostPlatform):
 
     def getOS(self):
         ver = os.sys.getwindowsversion()
-        return "Windows {}.{} build {}".format(ver.major, ver.minor, ver.build)
+        return f"Windows {ver.major}.{ver.minor} build {ver.build}"

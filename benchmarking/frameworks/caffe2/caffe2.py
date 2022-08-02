@@ -44,39 +44,28 @@ class Caffe2Framework(FrameworkBase):
         # model is now optional
         if "model" in benchmark:
             model = benchmark["model"]
-            assert "files" in model, "Files field is missing in benchmark {}".format(
-                filename
-            )
-            assert "name" in model, "Name field is missing in benchmark {}".format(
-                filename
-            )
-            assert "format" in model, "Format field is missing in benchmark {}".format(
-                filename
-            )
+            assert "files" in model, f"Files field is missing in benchmark {filename}"
+            assert "name" in model, f"Name field is missing in benchmark {filename}"
+            assert "format" in model, f"Format field is missing in benchmark {filename}"
 
             for f in model["files"]:
                 field = model["files"][f]
-                assert (
-                    "filename" in field
-                ), "Filename is missing in file" + " {} of benchmark {}".format(
-                    f, filename
+                assert "filename" in field, (
+                    "Filename is missing in file" + f" {f} of benchmark {filename}"
                 )
-                assert (
-                    "location" in field
-                ), "Location is missing in file" + " {} of benchmark {}".format(
-                    f, filename
+
+                assert "location" in field, (
+                    "Location is missing in file" + f" {f} of benchmark {filename}"
                 )
+
                 if "md5" not in field:
-                    assert not field["location"].startswith(
-                        "//"
-                    ), "MD5 is missing in file" + " {} of benchmark {}".format(
-                        f, filename
+                    assert not field["location"].startswith("//"), (
+                        "MD5 is missing in file" + f" {f} of benchmark {filename}"
                     )
 
+
         # tests is mandatory
-        assert "tests" in benchmark, "Tests field is missing in benchmark {}".format(
-            filename
-        )
+        assert "tests" in benchmark, f"Tests field is missing in benchmark {filename}"
         tests = benchmark["tests"]
 
         if is_post:
@@ -89,9 +78,10 @@ class Caffe2Framework(FrameworkBase):
         is_generic_test = tests[0]["metric"] == "generic"
 
         for test in tests:
-            assert (
-                "metric" in test
-            ), "Metric field is missing in " + "benchmark {}".format(filename)
+            assert "metric" in test, (
+                "Metric field is missing in " + f"benchmark {filename}"
+            )
+
 
             # no check is needed if the metric is generic
             if is_generic_test:
@@ -103,32 +93,36 @@ class Caffe2Framework(FrameworkBase):
             if "warmup" not in test:
                 test["warmup"] = -1
 
-            assert (
-                "identifier" in test
-            ), "Identifier field is missing in " + "benchmark {}".format(filename)
+            assert "identifier" in test, (
+                "Identifier field is missing in " + f"benchmark {filename}"
+            )
+
 
             if "commands" in test or "command" in test or "arguments" in test:
                 continue
             # for backward compatibility purpose
-            assert (
-                "inputs" in test
-            ), "Inputs field is missing in " + "benchmark {}".format(filename)
+            assert "inputs" in test, (
+                "Inputs field is missing in " + f"benchmark {filename}"
+            )
+
 
             num = -1
             for ip_name in test["inputs"]:
                 ip = test["inputs"][ip_name]
                 assert "shapes" in ip, (
-                    "Shapes field is missing in"
-                    + " input {}".format(ip_name)
-                    + " of benchmark {}".format(filename)
+                    "Shapes field is missing in" + f" input {ip_name}"
+                ) + f" of benchmark {filename}"
+
+                assert "type" in ip, (
+                    f"Type field is missing in input {ip_name}"
+                    + f" of benchmark {filename}"
                 )
-                assert "type" in ip, "Type field is missing in input {}".format(
-                    ip_name
-                ) + " of benchmark {}".format(filename)
+
                 assert isinstance(ip["shapes"], list), (
                     "Shape field should be a list. However, input "
-                    + "{} of benchmark is not.".format(ip_name, filename)
+                    + f"{ip_name} of benchmark is not."
                 )
+
 
                 dims = -1
                 for item in ip["shapes"]:
@@ -144,11 +138,9 @@ class Caffe2Framework(FrameworkBase):
                     num = len(ip["shapes"])
                 else:
                     assert len(ip["shapes"]) == num, (
-                        "The shapes of "
-                        + "input {} ".format(ip_name)
+                        ("The shapes of " + f"input {ip_name} ")
                         + "are not of the same dimension in "
-                        + "benchmark {}".format(filename)
-                    )
+                    ) + f"benchmark {filename}"
 
     def rewriteBenchmarkTests(self, benchmark, filename):
         tests = benchmark.pop("tests")
@@ -191,11 +183,13 @@ class Caffe2Framework(FrameworkBase):
                     new_num = len(fs)
                 else:
                     assert len(fs) == new_num, (
-                        "The number of specified {} files ".format(ftype)
-                        + "in blob {} do not ".format(name)
+                        (
+                            f"The number of specified {ftype} files "
+                            + f"in blob {name} do not "
+                        )
                         + "match in all input blobs in benchmark "
-                        + "{}.".format(source)
-                    )
+                    ) + f"{source}."
+
             else:
                 new_num = 1
 
@@ -215,7 +209,7 @@ class Caffe2Framework(FrameworkBase):
         preprocess_files=None,
         main_command=False,
     ):
-        cmds = super(Caffe2Framework, self).composeRunCommand(
+        if cmds := super(Caffe2Framework, self).composeRunCommand(
             commands,
             platform,
             programs,
@@ -227,8 +221,7 @@ class Caffe2Framework(FrameworkBase):
             shared_libs,
             preprocess_files,
             main_command,
-        )
-        if cmds:
+        ):
             return cmds
 
         # old format, will deprecate
@@ -260,14 +253,12 @@ class Caffe2Framework(FrameworkBase):
         cmd.extend(["--input_type", list(test["inputs"].values())[0]["type"]])
         if "output_files" in test:
             outputs = ",".join(list(test["output_files"].keys()))
-            cmd.extend(["--output", outputs])
-            cmd.extend(["--text_output", "true"])
+            cmd.extend(["--output", outputs, "--text_output", "true"])
             cmd.extend(["--output_folder", platform.getOutputDir()])
-        if "commands" in test:
-            if "caffe2" in test["commands"]:
-                for key in test["commands"]["caffe2"]:
-                    val = test["commands"]["caffe2"][key]
-                    cmd.extend(["--" + key, val])
+        if "commands" in test and "caffe2" in test["commands"]:
+            for key in test["commands"]["caffe2"]:
+                val = test["commands"]["caffe2"][key]
+                cmd.extend([f"--{key}", val])
 
         if shared_libs:
             cmd = [

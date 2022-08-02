@@ -37,7 +37,7 @@ def runOneBenchmark(
     local_reporter=None,
 ):
     assert "treatment" in info, "Treatment is missing in info"
-    getLogger().info("Running {}".format(benchmark["path"]))
+    getLogger().info(f'Running {benchmark["path"]}')
 
     status = 0
     minfo = copy.deepcopy(info["treatment"])
@@ -49,7 +49,7 @@ def runOneBenchmark(
         [1.0 for _ in range(20 << 20)]
         gc.collect()
         data = _runOnePass(minfo, mbenchmark, framework, platform)
-        status = status | getRunStatus()
+        status |= getRunStatus()
         meta = None
         if "control" in info:
             cinfo = copy.deepcopy(info["control"])
@@ -122,10 +122,13 @@ def _logNoData(benchmark, info, name):
     if "commit" in info["treatment"]:
         commit_hash = info["treatment"]["commit"]
     getLogger().info(
-        "No data collected for {}".format(model_name)
-        + "on {}. ".format(name)
-        + "The run may be failed for "
-        + "{}".format(commit_hash)
+        (
+            (
+                (f"No data collected for {model_name}" + f"on {name}. ")
+                + "The run may be failed for "
+            )
+            + f"{commit_hash}"
+        )
     )
 
 
@@ -145,8 +148,7 @@ def _runOnePass(info, benchmark, framework, platform):
         if getRunStatus() != 0:
             # early exit if there is an error
             break
-    data = _processDelayData(output)
-    return data
+    return _processDelayData(output)
 
 
 def _processDelayData(input_data):
@@ -176,9 +178,12 @@ def _mergeDelayData(treatment_data, control_data, bname):
             continue
         if k not in control_data:
             getLogger().error(
-                "Value {} existed in treatment but not ".format(k)
-                + "control for benchmark {}".format(bname)
+                (
+                    f"Value {k} existed in treatment but not "
+                    + f"control for benchmark {bname}"
+                )
             )
+
             continue
         control_value = control_data[k]
         treatment_value = treatment_data[k]
@@ -192,12 +197,19 @@ def _mergeDelayData(treatment_data, control_data, bname):
             control_string = control_value["info_string"]
             if treatment_string != control_string:
                 getLogger().warning(
-                    "Treatment value is used, and the control value is lost. "
-                    + "The field info_string in control "
-                    + "({})".format(control_string)
-                    + "is different from the info_string in treatment "
-                    + "({})".format(treatment_string)
+                    (
+                        (
+                            (
+                                "Treatment value is used, and the control value is lost. "
+                                + "The field info_string in control "
+                                + f"({control_string})"
+                            )
+                            + "is different from the info_string in treatment "
+                        )
+                        + f"({treatment_string})"
+                    )
                 )
+
 
         if "values" in control_value:
             data[k]["control_values"] = control_value["values"]
@@ -239,11 +251,14 @@ def _mergeDelayMeta(treatment_meta, control_meta, bname):
     for k in treatment_meta:
         if k not in control_meta:
             getLogger().error(
-                "Value {} existed in treatment but not ".format(k)
-                + "control for benchmark {}".format(bname)
+                (
+                    f"Value {k} existed in treatment but not "
+                    + f"control for benchmark {bname}"
+                )
             )
+
             continue
-        meta["control_{}".format(k)] = control_meta[k]
+        meta[f"control_{k}"] = control_meta[k]
     return meta
 
 
@@ -253,12 +268,15 @@ def _processErrorData(treatment_files, golden_files):
     data = {}
     for output in treatment_outputs:
         treatment_values = treatment_outputs[output]
-        assert output in golden_outputs, "Output {} is missing in golden".format(output)
+        assert output in golden_outputs, f"Output {output} is missing in golden"
         golden_values = golden_outputs[output]
-        diff_values = list(
-            map(lambda pair: pair[0] - pair[1], zip(treatment_values, golden_values))
+        diff_values = sorted(
+            map(
+                lambda pair: pair[0] - pair[1],
+                zip(treatment_values, golden_values),
+            )
         )
-        diff_values.sort()
+
         treatment_values.sort()
         golden_values.sort()
         data[output] = {
@@ -275,7 +293,7 @@ def _collectErrorData(output_files):
     data = {}
     for output in output_files:
         filename = output_files[output]
-        assert os.path.isfile(filename), "File {} doesn't exist".format(filename)
+        assert os.path.isfile(filename), f"File {filename} doesn't exist"
         with open(filename, "r") as f:
             content = f.read().splitlines()
             data[output] = [float(x.strip()) for x in content]
@@ -336,10 +354,7 @@ def _adjustData(info, data):
 
 def _retrieveMeta(info, benchmark, platform, framework, backend, user_identifier):
     assert "treatment" in info, "Treatment is missing in info"
-    meta = {}
-    # common
-    meta["backend"] = backend
-    meta["time"] = time.time()
+    meta = {"backend": backend, "time": time.time()}
     meta["framework"] = framework.getName()
     meta["platform"] = platform.getName()
     if platform.platform_hash:

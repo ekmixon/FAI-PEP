@@ -59,15 +59,15 @@ class RunBench(object):
             assert "--server_addr" in raw_args
             idx = raw_args.index("--server_addr")
             assert raw_args[idx + 1].startswith("http") or len(raw_args[idx + 1]) == 0
-            if "--lab" in raw_args and "--remote_reporter" not in raw_args:
-                raw_args.extend(
-                    [
-                        "--remote_reporter",
-                        raw_args[idx + 1]
-                        + ("" if raw_args[idx + 1][-1] == "/" else "/")
-                        + "benchmark/store-result|oss",
-                    ]
-                )
+        if "--lab" in raw_args and "--remote_reporter" not in raw_args:
+            raw_args.extend(
+                [
+                    "--remote_reporter",
+                    raw_args[idx + 1]
+                    + ("" if raw_args[idx + 1][-1] == "/" else "/")
+                    + "benchmark/store-result|oss",
+                ]
+            )
         app = self.repoCls(raw_args=raw_args)
         ret = app.run()
         if "--query_num_devices" in self.unknowns:
@@ -88,13 +88,10 @@ class RunBench(object):
             if len(unknowns[i]) > 1 and unknowns[i][:1] == "-":
                 if i < len(unknowns) - 1 and unknowns[i + 1][:1] != "-":
                     args[unknowns[i]] = unknowns[i + 1]
-                    i = i + 1
+                    i += 1
                 else:
                     args[unknowns[i]] = None
-            else:
-                # error conditionm, skipping
-                pass
-            i = i + 1
+            i += 1
         return args
 
     def _saveDefaultArgs(self, new_args):
@@ -102,11 +99,7 @@ class RunBench(object):
             os.makedirs(self.root_dir)
 
         print("Setting the default arguments...")
-        print(
-            "The default arguments are saved under {}".format(
-                self.root_dir + "/config.txt"
-            )
-        )
+        print(f"The default arguments are saved under {self.root_dir}/config.txt")
         print("Alternatively, you can edit the config.txt file directly\n")
         args = self._loadDefaultArgs()
 
@@ -154,7 +147,7 @@ class RunBench(object):
         return args
 
     def _loadDefaultArgs(self):
-        args = {
+        return {
             "--benchmark_table": "benchmark_benchmarkinfo",
             "--cache_config": os.path.join(self.root_dir, "cache_config.txt"),
             "--remote_repository": "origin",
@@ -174,11 +167,10 @@ class RunBench(object):
             "--server_addr": "http://127.0.0.1:8000",
             "--result_db": "django",
         }
-        return args
 
     def _inputOneArg(self, text, key, args):
         arg = args[key] if key in args else None
-        v = six.moves.input(text + " [" + str(arg) + "]: ")
+        v = six.moves.input(f"{text} [{str(arg)}]: ")
         if v == "":
             v = arg
         if v is not None:
@@ -206,13 +198,12 @@ class RunBench(object):
                 config_file = os.path.join(self.root_dir, config)
                 if os.path.isfile(config_file):
                     with open(config_file, "r") as f:
-                        args.update(json.load(f))
+                        args |= json.load(f)
         for v in new_args:
             if v in args:
                 del args[v]
-        if "--lab" in new_args:
-            if "--remote" in args:
-                del args["--remote"]
+        if "--lab" in new_args and "--remote" in args:
+            del args["--remote"]
         return args
 
     def _updateArgsWithBenchmarkOverrides(self, args):
@@ -234,9 +225,7 @@ class RunBench(object):
             if success:
                 benchmark_file = adhoc_path
             else:
-                getLogger().error(
-                    "Could not find specified adhoc config: {}".format(configName)
-                )
+                getLogger().error(f"Could not find specified adhoc config: {configName}")
         if not benchmark_file:
             return
 
@@ -246,9 +235,7 @@ class RunBench(object):
         benchmark = {}
         with open(benchmark_file, "r") as f:
             benchmark = json.load(f)
-        defaults = {}
-        if "default_args" in benchmark:
-            defaults = benchmark["default_args"]
+        defaults = benchmark["default_args"] if "default_args" in benchmark else {}
         if len(defaults) == 0:
             return
 

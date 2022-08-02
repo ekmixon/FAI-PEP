@@ -45,8 +45,7 @@ class WatchDog(object):
 
     def _runWatchdog(self):
         while self.running:
-            triggered = self.condition()
-            if triggered:
+            if triggered := self.condition():
                 self.action()
                 if self.once:
                     break

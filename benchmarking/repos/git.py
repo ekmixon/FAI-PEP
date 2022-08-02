@@ -22,8 +22,7 @@ class GitRepo(RepoBase):
     def _run(self, cmd, *args):
         git = ["git"]
         if self.dir:
-            git.append("-C")
-            git.append(self.dir)
+            git.extend(("-C", self.dir))
         git.append(cmd)
         git.extend(args)
         return "\n".join(processRun(git)[0])
@@ -47,14 +46,14 @@ class GitRepo(RepoBase):
 
     def getNextCommitHash(self, commit, step):
         commits = (
-            self._run("rev-list", "--reverse", "--ancestry-path", commit + "..HEAD")
+            self._run(
+                "rev-list", "--reverse", "--ancestry-path", f"{commit}..HEAD"
+            )
             .strip()
             .split("\n")
         )
-        if len(commits) <= step:
-            return commit
-        next_commit = commits[step - 1].strip()
-        return next_commit
+
+        return commit if len(commits) <= step else commits[step - 1].strip()
 
     def getCommitsInRange(self, start_date, end_date):
         return self._run(
@@ -69,5 +68,5 @@ class GitRepo(RepoBase):
 
     def getPriorCommits(self, commit, num):
         return self._run(
-            "log", "-" + str(num), "--pretty=format:%H:%ct", commit
+            "log", f"-{str(num)}", "--pretty=format:%H:%ct", commit
         ).strip()

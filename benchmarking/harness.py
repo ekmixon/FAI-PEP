@@ -232,7 +232,7 @@ class BenchmarkDriver(object):
     def __init__(self, **kwargs):
         setRunStatus(0, overwrite=True)
         self.status = 0
-        raw_args = kwargs.get("raw_args", None)
+        raw_args = kwargs.get("raw_args")
         self.usb_controller = kwargs.get("usb_controller")
         self.args, self.unknowns = parser.parse_known_args(raw_args)
         self._lock = threading.Lock()
@@ -254,11 +254,10 @@ class BenchmarkDriver(object):
             # check the framework matches
             if "model" in benchmark and "framework" in benchmark["model"]:
                 assert benchmark["model"]["framework"] == self.args.framework, (
-                    "Framework specified in the json file "
-                    "{} ".format(benchmark["model"]["framework"])
-                    + "does not match the command line argument "
-                    "{}".format(self.args.framework)
+                    f'Framework specified in the json file {benchmark["model"]["framework"]} '
+                    + f"does not match the command line argument {self.args.framework}"
                 )
+
             if self.args.debug:
                 for test in benchmark["tests"]:
                     test["log_output"] = True
@@ -266,7 +265,7 @@ class BenchmarkDriver(object):
                 for test in benchmark["tests"]:
                     cmd_env = dict(self.args.env)
                     if "env" in test:
-                        cmd_env.update(test["env"])
+                        cmd_env |= test["env"]
                     test["env"] = cmd_env
 
             b = copy.deepcopy(benchmark)
@@ -301,12 +300,13 @@ class BenchmarkDriver(object):
         tempdir = tempfile.mkdtemp(
             prefix="_".join(["aibench", str(self.args.user_identifier), ""])
         )
-        getLogger().info("Temp directory: {}".format(tempdir))
+        getLogger().info(f"Temp directory: {tempdir}")
         info = self._getInfo()
         frameworks = getFrameworks()
         assert (
             self.args.framework in frameworks
-        ), "Framework {} is not supported".format(self.args.framework)
+        ), f"Framework {self.args.framework} is not supported"
+
         framework = frameworks[self.args.framework](tempdir, self.args)
         bcollector = BenchmarkCollector(
             framework, self.args.model_cache, args=self.args
@@ -341,29 +341,23 @@ class BenchmarkDriver(object):
             status_str = "harness error"
         else:
             status_str = "user and harness error"
-        getLogger().info(" ======= {} =======".format(status_str))
+        getLogger().info(f" ======= {status_str} =======")
         if getRunKilled():
             return RUN_KILLED
-        if getRunTimeout():
-            return RUN_TIMEOUT
-        return status
+        return RUN_TIMEOUT if getRunTimeout() else status
 
     def _getInfo(self):
         info = json.loads(self.args.info)
         info["run_type"] = "benchmark"
         if "meta" not in info:
             info["meta"] = {}
-        info["meta"]["command_args"] = (
-            self.args.command_args if self.args.command_args else ""
-        )
+        info["meta"]["command_args"] = self.args.command_args or ""
 
         # for backward compatible purpose
         if self.args.backend:
-            info["meta"]["command_args"] += " --backend {}".format(self.args.backend)
+            info["meta"]["command_args"] += f" --backend {self.args.backend}"
         if self.args.wipe_cache:
-            info["meta"]["command_args"] += " --wipe_cache {}".format(
-                self.args.wipe_cache
-            )
+            info["meta"]["command_args"] += f" --wipe_cache {self.args.wipe_cache}"
         if self.args.user_string:
             info["user"] = self.args.user_string
 

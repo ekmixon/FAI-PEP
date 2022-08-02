@@ -22,8 +22,7 @@ class HGRepo(RepoBase):
     def _run(self, cmd, *args):
         hg = ["hg"]
         if self.dir:
-            hg.append("-R")
-            hg.append(self.dir)
+            hg.extend(("-R", self.dir))
         hg.append(cmd)
         hg.extend(args)
         return "\n".join(processRun(hg)[0])
@@ -68,15 +67,13 @@ class HGRepo(RepoBase):
 
     def getCommitsInRange(self, start_date, end_date):
         sdate = start_date.strftime("%Y-%m-%d %H:%M:%S")
-        # edate = end_date.strftime("%Y-%m-%d %H:%M:%S")
-        output = self._run(
+        return self._run(
             "log",
             "-r",
             'children(first(reverse(::.) & date("<' + sdate + '")))',
             "--template",
             "{node}:{date}\\n",
         ).strip()
-        return output
 
     def getPriorCommits(self, commit, num):
         # do not support prior commits

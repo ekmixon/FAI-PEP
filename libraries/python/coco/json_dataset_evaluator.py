@@ -37,10 +37,11 @@ def evaluateMasks(
     json_dataset, all_boxes, all_segms, output_dir, use_salt=True, cleanup=False
 ):
     res_file = os.path.join(
-        output_dir, "segmentations_" + json_dataset.name + "_results"
+        output_dir, f"segmentations_{json_dataset.name}_results"
     )
+
     if use_salt:
-        res_file += "_{}".format(str(uuid.uuid4()))
+        res_file += f"_{str(uuid.uuid4())}"
     res_file += ".json"
     _writeCocoSegmsResultsFile(json_dataset, all_boxes, all_segms, res_file)
     # Only do evaluation on non-test sets (annotations are undisclosed on test)
@@ -48,10 +49,9 @@ def evaluateMasks(
         coco_eval = _doSegmentationEval(json_dataset, res_file, output_dir)
     else:
         logger.warning(
-            "{} eval ignored as annotations are undisclosed on test: {} ignored".format(
-                "Segmentation", json_dataset.name
-            )
+            f"Segmentation eval ignored as annotations are undisclosed on test: {json_dataset.name} ignored"
         )
+
         coco_eval = None
     # Optionally cleanup results json file
     if cleanup:
@@ -77,8 +77,9 @@ def _writeCocoSegmsResultsFile(json_dataset, all_boxes, all_segms, res_file):
             )
         )
     logger.info(
-        "Writing segmentation results json to: {}".format(os.path.abspath(res_file))
+        f"Writing segmentation results json to: {os.path.abspath(res_file)}"
     )
+
     with open(res_file, "w") as fid:
         # "counts" is an array encoded by mask_util as a byte-stream. Python3's
         # json writer which /always produces strings/ cannot serialize a bytestream
@@ -137,9 +138,9 @@ def _doSegmentationEval(json_dataset, res_file, output_dir):
 
 
 def evaluateBoxes(json_dataset, all_boxes, output_dir, use_salt=True, cleanup=False):
-    res_file = os.path.join(output_dir, "bbox_" + json_dataset.name + "_results")
+    res_file = os.path.join(output_dir, f"bbox_{json_dataset.name}_results")
     if use_salt:
-        res_file += "_{}".format(str(uuid.uuid4()))
+        res_file += f"_{str(uuid.uuid4())}"
     res_file += ".json"
     _writeCocoBboxResultsFile(json_dataset, all_boxes, res_file)
     # Only do evaluation on non-test sets (annotations are undisclosed on test)
@@ -147,10 +148,9 @@ def evaluateBoxes(json_dataset, all_boxes, output_dir, use_salt=True, cleanup=Fa
         coco_eval = _doDetectionEval(json_dataset, res_file, output_dir)
     else:
         logger.warning(
-            "{} eval ignored as annotations are undisclosed on test: {} ignored".format(
-                "Bbox", json_dataset.name
-            )
+            f"Bbox eval ignored as annotations are undisclosed on test: {json_dataset.name} ignored"
         )
+
         coco_eval = None
     # Optionally cleanup results json file
     if cleanup:
@@ -173,7 +173,7 @@ def _writeCocoBboxResultsFile(json_dataset, all_boxes, res_file):
         results.extend(
             _cocoBboxEesultsOneCategory(json_dataset, all_boxes[cls_ind], cat_id)
         )
-    logger.info("Writing bbox results json to: {}".format(os.path.abspath(res_file)))
+    logger.info(f"Writing bbox results json to: {os.path.abspath(res_file)}")
     with open(res_file, "w") as fid:
         json.dump(results, fid)
 

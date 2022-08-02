@@ -40,7 +40,7 @@ class DjangoURLPrinter(URLPrinterBase):
         return col_sel_params
 
     def getGraphConfParams(self):
-        graph_conf_params = [
+        return [
             {
                 "name": "graph-type-dropdown",
                 "value": "bar-graph",
@@ -50,13 +50,12 @@ class DjangoURLPrinter(URLPrinterBase):
                 "value": "p10",
             },
         ]
-        return graph_conf_params
 
     def getFilterParams(self, user_identifier):
         if user_identifier is None:
             return {}
 
-        filter_params = {
+        return {
             "condition": "AND",
             "rules": [
                 {
@@ -70,20 +69,17 @@ class DjangoURLPrinter(URLPrinterBase):
             ],
             "valid": True,
         }
-        return filter_params
 
     def getDjangoParams(self, user_identifier):
         col_sel_params = self.getColumnSelParams()
         graph_conf_params = self.getGraphConfParams()
         filter_params = self.getFilterParams(user_identifier)
 
-        params = {
+        return {
             "sort": "-p10",
             "selection_form": json.dumps(col_sel_params + graph_conf_params),
             "filters": json.dumps(filter_params),
         }
-
-        return params
 
     def printURL(self, dataset, user_identifier, benchmarks):
         params = self.getDjangoParams(user_identifier)
@@ -97,7 +93,7 @@ class DjangoURLPrinter(URLPrinterBase):
 
         url = (self.db_url + "?{}").format(param_string)
 
-        print("Result URL => " + url)
+        print(f"Result URL => {url}")
 
 
 registerResultURL("django", DjangoURLPrinter)

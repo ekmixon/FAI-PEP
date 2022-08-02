@@ -21,13 +21,12 @@ def get_payload(req):
     devices = []
     if devices_str is not None:
         devices = devices_str.split(",")
-        if len(devices) == 1:
-            if devices[0] == "":
-                devices = []
+        if len(devices) == 1 and devices[0] == "":
+            devices = []
 
     ids = []
-    if ids_str is None and (action == "run" or action == "release"):
-        raise AssertionError("ids must be specified for {}".format(action))
+    if ids_str is None and action in ["run", "release"]:
+        raise AssertionError(f"ids must be specified for {action}")
     elif ids_str is not None:
         ids = ids_str.split(",")
 
@@ -80,15 +79,13 @@ def get_payload(req):
         return {"status": "success"}
 
     elif action == "done":
-        assert id is not None, "id must be specified for " + action
+        assert id is not None, f"id must be specified for {action}"
 
         log = req.get("log")
         assert log is not None, "Log field is empty"
 
         status = req.get("status")
-        assert status == "DONE" or status == "FAILED" or status == "USER_ERROR", (
-            "Unknown status " + status
-        )
+        assert status in ["DONE", "FAILED", "USER_ERROR"], f"Unknown status {status}"
 
         BenchmarkInfo.objects.filter(id=id, job_queue=job_queue).update(
             status=status, done_time=timezone.now(), result=result, log=log
@@ -163,4 +160,4 @@ def get_payload(req):
         return {"status": "success"}
 
     else:
-        raise AssertionError("action {} not recognized".format(action))
+        raise AssertionError(f"action {action} not recognized")

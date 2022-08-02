@@ -44,7 +44,7 @@ class IDB(PlatformUtilBase):
     def push(self, src, tgt):
         # only push files, not directories, as apps are directories
         if os.path.isdir(src):
-            getLogger().info("Skip pushing directory {}".format(src))
+            getLogger().info(f"Skip pushing directory {src}")
             return
         return self.run("--upload", src, "--to", tgt)
 
@@ -57,9 +57,10 @@ class IDB(PlatformUtilBase):
         src_filename = os.path.join(self.cached_tree, src)
         if not os.path.isfile(src_filename):
             self.run("--download", "--to", self.cached_tree)
-        assert os.path.isfile(src_filename), "File {} doesn't exist in app".format(
+        assert os.path.isfile(
             src_filename
-        )
+        ), f"File {src_filename} doesn't exist in app"
+
         shutil.copyfile(src_filename, tgt)
 
     def reboot(self):
@@ -70,7 +71,7 @@ class IDB(PlatformUtilBase):
             return True
         except Exception:
             getLogger().error("Rebooting failure...")
-            getLogger().error("Unknown exception {}".format(sys.exc_info()[0]))
+            getLogger().error(f"Unknown exception {sys.exc_info()[0]}")
             return False
 
     def deleteFile(self, file):
@@ -85,7 +86,7 @@ class IDB(PlatformUtilBase):
             response = self.run("--get_battery_level")
             level = int(response[-1].lstrip("BatteryCurrentCapacity:"))
 
-            getLogger().info("Result {}".format(level))
+            getLogger().info(f"Result {level}")
             return level
         except Exception:
             getLogger().exception("Could not read battery level")

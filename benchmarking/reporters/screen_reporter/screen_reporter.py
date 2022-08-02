@@ -37,22 +37,15 @@ class ScreenReporter(ReporterBase):
         ts = float(meta["commit_time"])
         commit = meta["commit"]
 
-        print(
-            "NET: {}\tMETRIC: {}\tID: {}".format(
-                net_name, metric_name, meta["identifier"]
-            )
-        )
+        print(f'NET: {net_name}\tMETRIC: {metric_name}\tID: {meta["identifier"]}')
         if "platform_hash" in meta:
-            print("PLATFORM: {}\tHASH: {}".format(platform_name, meta["platform_hash"]))
+            print(f'PLATFORM: {platform_name}\tHASH: {meta["platform_hash"]}')
         else:
-            print("PLATFORM: {}".format(platform_name))
+            print(f"PLATFORM: {platform_name}")
         print(
-            "FRAMEWORK: {}\tCOMMIT: {}\tTIME: {}".format(
-                framework_name,
-                commit,
-                datetime.datetime.fromtimestamp(int(ts)).strftime("%Y-%m-%d %H:%M:%S"),
-            )
+            f'FRAMEWORK: {framework_name}\tCOMMIT: {commit}\tTIME: {datetime.datetime.fromtimestamp(int(ts)).strftime("%Y-%m-%d %H:%M:%S")}'
         )
+
 
         del_keys = []
         for key in data:

@@ -44,8 +44,7 @@ class JsonConverter(DataConverterBase):
             except Exception as e:
                 # bypass one line
                 getLogger().info("Skip one row %s \n Exception: %s" % (row, str(e)))
-                pass
-        if len(valid_run_idxs) > 0:
+        if valid_run_idxs:
             # strip data not yet in a valid range
             # here it is assumed the NET metric appears earlier than
             # other metrics
@@ -64,15 +63,27 @@ class JsonConverter(DataConverterBase):
                         new_string = d["info_string"]
                         if old_string != new_string:
                             getLogger().warning(
-                                "info_string values "
-                                "for {} ".format(key)
-                                + "do not match.\n"
-                                + "Current info_string: "
-                                + "{}\n ".format(old_string)
-                                + "does not match new "
-                                + "info_string: "
-                                + "{}".format(new_string)
+                                (
+                                    (
+                                        (
+                                            (
+                                                (
+                                                    (
+                                                        f"info_string values for {key} "
+                                                        + "do not match.\n"
+                                                    )
+                                                    + "Current info_string: "
+                                                )
+                                                + f"{old_string}\n "
+                                            )
+                                            + "does not match new "
+                                        )
+                                        + "info_string: "
+                                    )
+                                    + f"{new_string}"
+                                )
                             )
+
                     else:
                         details[key]["info_string"] = d["info_string"]
                 if "value" in d:
@@ -92,21 +103,23 @@ class JsonConverter(DataConverterBase):
                         # prevent some data corruption
                         continue
                     for kk, vv in v.items():
-                        key = k + " " + kk
+                        key = f"{k} {kk}"
                         if "info_string" in vv:
                             if "info_string" in details[key]:
                                 assert (
-                                    details[key]["info_string"] == vv["info_string"]
+                                    details[key]["info_string"]
+                                    == vv["info_string"]
                                 ), (
-                                    "info_string values for {} ".format(key)
-                                    + "do not match.\n"
-                                    + "Current info_string:\n{}\n ".format(
-                                        details[key]["info_string"]
+                                    (
+                                        (
+                                            f"info_string values for {key} "
+                                            + "do not match.\n"
+                                        )
+                                        + f'Current info_string:\n{details[key]["info_string"]}\n '
                                     )
-                                    + "does not match new info_string:\n{}".format(
-                                        vv["info_string"]
-                                    )
+                                    + f'does not match new info_string:\n{vv["info_string"]}'
                                 )
+
                             else:
                                 details[key]["info_string"] = vv["info_string"]
                         else:
@@ -121,6 +134,7 @@ class JsonConverter(DataConverterBase):
         if k in detail:
             assert (
                 detail[k] == d[k]
-            ), "Field {} does not match in different entries".format(k)
+            ), f"Field {k} does not match in different entries"
+
         else:
             detail[k] = d[k]

@@ -34,15 +34,18 @@ def checkRegressions(info, platform, framework, benchmark, reporters, meta, outd
     if meta["metric"] not in detectors:
         return
     commit = info["treatment"]["commit"]
-    getLogger().info("Checking regression for " + commit)
+    getLogger().info(f"Checking regression for {commit}")
     regressions, infos = _detectRegression(info, meta, outdir)
     if len(regressions):
         from driver.benchmark_driver import runOneBenchmark
 
         getLogger().info(
-            "Regression detected on {}, ".format(platform.getMangledName())
-            + "verifying: {}".format(",".join(regressions))
+            (
+                f"Regression detected on {platform.getMangledName()}, "
+                + f'verifying: {",".join(regressions)}'
+            )
         )
+
         for i in infos:
             i["run_type"] = "verify"
             runOneBenchmark(
@@ -63,19 +66,23 @@ def checkRegressions(info, platform, framework, benchmark, reporters, meta, outd
                 reporters,
             )
             getLogger().info(
-                "Regression confirmed for commit: {}".format(
-                    regressed_info["treatment"]["commit"]
-                )
+                f'Regression confirmed for commit: {regressed_info["treatment"]["commit"]}'
             )
-            getLogger().info("Regressed types: {}".format(",".join(verify_regressions)))
+
+            getLogger().info(f'Regressed types: {",".join(verify_regressions)}')
         getLogger().info(
-            "Regression verifying completed for "
-            + "{} on {}".format(platform.getMangledName(), commit)
+            (
+                "Regression verifying completed for "
+                + f"{platform.getMangledName()} on {commit}"
+            )
         )
+
     else:
         getLogger().info(
-            "No Regression found for "
-            + "{} on {}".format(platform.getMangledName(), commit)
+            (
+                "No Regression found for "
+                + f"{platform.getMangledName()} on {commit}"
+            )
         )
 
 
@@ -103,7 +110,7 @@ def _detectOneBenchmarkRegression(data):
             detector.isRegressed(filename, one_data[0], one_data[2:], control_change)
         ) and detector.isRegressed(filename, one_data[1], one_data[2:], control_change):
             regressed.append(one_data[0]["type"])
-    if len(regressed) > 0:
+    if regressed:
         infos = []
         for x in meta:
             idx = x["command"].index("--info")
@@ -135,11 +142,10 @@ def _getLatestRun(dir):
     last_run -= 1
     if last_run >= 0:
         return os.path.join(dir, str(last_run))
-    else:
-        getLogger().error(
-            "Latest run in directory %s doesn't exist. " "This should not happen." % dir
-        )
-        return None
+    getLogger().error(
+        "Latest run in directory %s doesn't exist. " "This should not happen." % dir
+    )
+    return None
 
 
 def _getBenchmarkRuns(info, meta, outdir):

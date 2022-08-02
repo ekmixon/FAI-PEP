@@ -50,5 +50,5 @@ class SimpleLocalReporter(ReporterBase):
             file.write(content_d)
         pname = meta[self.PLATFORM]
         if "platform_hash" in meta:
-            pname = pname + " ({})".format(meta["platform_hash"])
-        getLogger().info("Writing file for {}: {}".format(pname, dirname))
+            pname = pname + f' ({meta["platform_hash"]})'
+        getLogger().info(f"Writing file for {pname}: {dirname}")

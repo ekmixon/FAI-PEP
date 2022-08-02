@@ -40,8 +40,6 @@ class DataConverterBase(object):
         if data is None:
             return []
         if isinstance(data, string_types):
-            rows = data.split("\n")
-        else:
-            assert isinstance(data, list), "Input format must be string or list"
-            rows = data
-        return rows
+            return data.split("\n")
+        assert isinstance(data, list), "Input format must be string or list"
+        return data

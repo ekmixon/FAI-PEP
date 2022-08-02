@@ -82,7 +82,7 @@ def visualize(request):
             graph_type = column["value"]
         if column["name"] == "rank-column-dropdown":
             rank_column = column["value"]
-    if len(include_column_set) == 0:
+    if not include_column_set:
         include_column_set.add("p50")
         include_column_set.add("type")
     # Filter data base on request
@@ -113,6 +113,7 @@ def visualize(request):
 
     data = {}
 
+    chartcontainer = "linechart_container"  # container name
     # Build graph to display
     if graph_type == "bar-graph":
         labels = [str(i) for i in range(10)]
@@ -120,10 +121,7 @@ def visualize(request):
         # Construct data to display
         sort_attr = request.GET.get("sort")
         if sort_attr is None:
-            if rank_column != "":
-                sort_attr = "-" + rank_column
-            else:
-                sort_attr = "p50"
+            sort_attr = f"-{rank_column}" if rank_column != "" else "p50"
         else:
             rank_column = sort_attr
             if rank_column.startswith("-"):
@@ -139,7 +137,6 @@ def visualize(request):
 
         # Chart info for NVD3
         charttype = "discreteBarChart"
-        chartcontainer = "linechart_container"  # container name
         data = {
             "charttype": charttype,
             "chartdata": chartdata,
@@ -163,12 +160,11 @@ def visualize(request):
             index = i + 1
             vals = [getattr(o, column) for o in qs]
 
-            chartdata["name{}".format(index)] = column
-            chartdata["y{}".format(index)] = vals
+            chartdata[f"name{index}"] = column
+            chartdata[f"y{index}"] = vals
 
         # Chart info for NVD3
         charttype = "lineChart"
-        chartcontainer = "linechart_container"  # container name
         data = {
             "charttype": charttype,
             "chartdata": chartdata,

@@ -34,7 +34,7 @@ parser.add_argument(
 
 
 def reboot(**kwargs):
-    raw_args = kwargs.get("raw_args", None)
+    raw_args = kwargs.get("raw_args")
     args, _ = parser.parse_known_args(raw_args)
     device = args.device
     platform = args.platform
@@ -43,9 +43,8 @@ def reboot(**kwargs):
     elif platform.startswith("android"):
         util = ADB(device, args.android_dir)
     else:
-        raise AssertionError("Platform {} not recognized".format(platform))
-    success = util.reboot()
-    return success
+        raise AssertionError(f"Platform {platform} not recognized")
+    return util.reboot()
 
 
 if __name__ == "__main__":

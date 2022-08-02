@@ -37,7 +37,7 @@ class HostPlatform(PlatformBase):
         if args.platform_sig is not None:
             platform_name = str(args.platform_sig)
         else:
-            platform_name = platform.platform() + "-" + self._getProcessorName()
+            platform_name = f"{platform.platform()}-{self._getProcessorName()}"
         self.tempdir = os.path.join(tempdir, platform_hash)
         hdb = HDB(platform_hash, tempdir)
         super(HostPlatform, self).__init__(
@@ -57,7 +57,7 @@ class HostPlatform(PlatformBase):
         self.type = "host"
 
     def getOS(self):
-        return "{} {}".format(os.uname().sysname, os.uname().release)
+        return f"{os.uname().sysname} {os.uname().release}"
 
     def runBenchmark(self, cmd, *args, **kwargs):
         if not isinstance(cmd, list):
@@ -135,10 +135,9 @@ class HostPlatform(PlatformBase):
         if duration < min_duration * 60:
             diff = min_duration * 60 - duration
             getLogger().info(
-                "Sleep for {} - {} = {} seconds".format(
-                    min_duration * 60, duration, diff
-                )
+                f"Sleep for {min_duration * 60} - {duration} = {diff} seconds"
             )
+
             time.sleep(diff)
 
     def _getProcessorName(self):
@@ -167,7 +166,7 @@ class HostPlatform(PlatformBase):
         if not os.path.isfile(fbwhoami_file):
             return False
         with open(fbwhoami_file) as f:
-            for line in f.readlines():
+            for line in f:
                 pair = line.split("=", 1)
                 if len(pair) == 2 and pair[0] == "SERVER_TYPE":
                     return "GPU" in pair[1]

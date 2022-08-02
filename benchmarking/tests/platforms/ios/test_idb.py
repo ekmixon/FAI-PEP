@@ -68,10 +68,10 @@ class IDBTest(unittest.TestCase):
             self.assertEqual(push_res, ("--upload", src, "--to", tgt))
 
     def _ios_run_for_reboot(self, *args, **kwargs):
-        self.assertTrue(args[0] == "idevicepair" or args[0] == "idevicediagnostics")
+        self.assertTrue(args[0] in ["idevicepair", "idevicediagnostics"])
         self.assertEqual(args[1], "-u")
         self.assertEqual(args[2], "TEST_DEVICE")
-        self.assertTrue(args[3] == "pair" or args[3] == "restart")
+        self.assertTrue(args[3] in ["pair", "restart"])
 
     def test_reboot(self):
         idb = IDB(device="TEST_DEVICE")

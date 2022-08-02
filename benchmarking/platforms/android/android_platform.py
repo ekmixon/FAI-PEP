@@ -48,7 +48,7 @@ class AndroidPlatform(PlatformBase):
         self.platform_abi = adb.shell(["getprop ro.product.cpu.abi"], default="")[
             0
         ].strip()
-        self.os_version = "{}-{}".format(self.rel_version, self.build_version)
+        self.os_version = f"{self.rel_version}-{self.build_version}"
         self.type = "android"
         self.setPlatform(platform)
         self.setPlatformHash(adb.device)
@@ -60,11 +60,11 @@ class AndroidPlatform(PlatformBase):
 
     def getKind(self):
         if self.platform_model and self.platform_os_version:
-            return "{}-{}".format(self.platform_model, self.platform_os_version)
+            return f"{self.platform_model}-{self.platform_os_version}"
         return self.platform
 
     def getOS(self):
-        return "Android {} sdk {}".format(self.rel_version, self.build_version)
+        return f"Android {self.rel_version} sdk {self.build_version}"
 
     def _setLogCatSize(self):
         repeat = True
@@ -74,25 +74,21 @@ class AndroidPlatform(PlatformBase):
             # We know this command may fail. Avoid propogating this
             # failure to the upstream
             success = getRunStatus()
-            ret = self.util.logcat("-G", str(size) + "K")
+            ret = self.util.logcat("-G", f"{size}K")
             setRunStatus(success, overwrite=True)
             if len(ret) > 0 and ret[0].find("failed to") >= 0:
                 repeat = True
-                size = int(size / 2)
+                size //= 2
 
     def fileExistsOnPlatform(self, files):
         if isinstance(files, string_types):
             exists = self.util.shell(
-                "test -e {} && echo True || echo False".format(files).split(" ")
+                f"test -e {files} && echo True || echo False".split(" ")
             )
-            if "True" not in exists:
-                return False
-            return True
+
+            return "True" in exists
         elif isinstance(files, list):
-            for f in files:
-                if not self.fileExistsOnPlatform(f):
-                    return False
-            return True
+            return all(self.fileExistsOnPlatform(f) for f in files)
         raise TypeError(
             "fileExistsOnPlatform takes either a string or list of strings."
         )
@@ -106,20 +102,20 @@ class AndroidPlatform(PlatformBase):
         # find the first zipped app file
         assert "program" in programs, "program is not specified"
 
-        if "platform" in benchmark["model"] and benchmark["model"][
-            "platform"
-        ].startswith("android"):
-            if "app" in benchmark["model"]:
-                self.app = benchmark["model"]["app"]
+        if (
+            "platform" in benchmark["model"]
+            and benchmark["model"]["platform"].startswith("android")
+            and "app" in benchmark["model"]
+        ):
+            self.app = benchmark["model"]["app"]
 
         if not self.app:
-            if "intent.txt" in programs:
-                # temporary to rename the program with adb suffix
-                with open(programs["intent.txt"], "r") as f:
-                    self.app = json.load(f)
-            else:
+            if "intent.txt" not in programs:
                 return
 
+            # temporary to rename the program with adb suffix
+            with open(programs["intent.txt"], "r") as f:
+                self.app = json.load(f)
         # Uninstall if exist
         package = self.util.shell(["pm", "list", "packages", self.app["package"]])
         if len(package) > 0 and package[0].strip() == "package:" + self.app["package"]:
@@ -182,16 +178,12 @@ class AndroidPlatform(PlatformBase):
             if platform_args.get("enable_profiling", False):
                 getLogger().warn("Profiling for app benchmarks is not implemented.")
 
-        patterns = []
         pattern = re.compile(
-            r".*{}.*{}.*BENCHMARK_DONE".format(
-                self.app["package"], self.app["activity"]
-            )
+            f'.*{self.app["package"]}.*{self.app["activity"]}.*BENCHMARK_DONE'
         )
-        patterns.append(pattern)
-        pattern = re.compile(
-            r".*ActivityManager: Killing .*{}".format(self.app["package"])
-        )
+
+        patterns = [pattern]
+        pattern = re.compile(f'.*ActivityManager: Killing .*{self.app["package"]}')
         patterns.append(pattern)
         platform_args["patterns"] = patterns
         self.util.shell(["am", "start", "-S", "-W", activity])
@@ -230,14 +222,13 @@ class AndroidPlatform(PlatformBase):
             if platform_args.get("enable_profiling", False):
                 # attempt to run with profiling, else fallback to standard run
                 try:
-                    simpleperf = getProfilerByUsage(
+                    if simpleperf := getProfilerByUsage(
                         "android",
                         None,
                         platform=self,
                         model_name=platform_args.get("model_name", None),
                         cmd=cmd,
-                    )
-                    if simpleperf:
+                    ):
                         f = simpleperf.start()
                         output, meta = f.result()
                         if not output or not meta:
@@ -248,15 +239,12 @@ class AndroidPlatform(PlatformBase):
                         if not log_to_screen_only:
                             log_logcat = self.util.logcat("-d")
                         return output + log_logcat, meta
-                # if this has not succeeded for some reason reset run status and run without profiling.
                 except Exception as ex:
                     getLogger().exception(
                         f"An error has occurred when running Simpleperf profiler. {ex}"
                     )
         log_screen = self.util.shell(cmd, **platform_args)
-        log_logcat = []
-        if not log_to_screen_only:
-            log_logcat = self.util.logcat("-d")
+        log_logcat = [] if log_to_screen_only else self.util.logcat("-d")
         return log_screen + log_logcat, meta
 
     def collectMetaData(self, info):
@@ -276,9 +264,8 @@ class AndroidPlatform(PlatformBase):
         results = res[0].split("\n")
         pattern = re.compile(r"^shell\s+(\d+)\s+")
         for result in results:
-            match = pattern.match(result)
-            if match:
-                pid = match.group(1)
+            if match := pattern.match(result):
+                pid = match[1]
                 self.util.shell(["kill", pid])
 
     def waitForDevice(self, timeout):
@@ -286,14 +273,12 @@ class AndroidPlatform(PlatformBase):
         num = int(timeout / period)
         count = 0
         ls = []
-        while len(ls) == 0 and count < num:
+        while not ls and count < num:
             ls = self.util.shell(["ls", self.tgt_dir])
             time.sleep(period)
         if len(ls) == 0:
             getLogger().error(
-                "Cannot reach device {} ({}) after {}.".format(
-                    self.platform, self.platform_hash, timeout
-                )
+                f"Cannot reach device {self.platform} ({self.platform_hash}) after {timeout}."
             )
 
     def currentPower(self):

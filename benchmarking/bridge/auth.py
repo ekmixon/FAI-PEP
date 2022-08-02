@@ -17,7 +17,4 @@ class Auth(object):
             self.obj = self.auth_handles[handle](self.app_id, self.token, is_test)
 
     def get_auth_params(self):
-        params = {}
-        if self.obj is not None:
-            params = self.obj.get_auth_params()
-        return params
+        return self.obj.get_auth_params() if self.obj is not None else {}

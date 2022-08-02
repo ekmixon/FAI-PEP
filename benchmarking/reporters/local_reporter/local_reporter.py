@@ -55,19 +55,19 @@ class LocalReporter(ReporterBase):
         )
         i = 0
         while os.path.exists(os.path.join(dirname, str(i))):
-            i = i + 1
+            i += 1
         dirname = os.path.join(dirname, str(i))
         os.makedirs(dirname)
         for d in data:
-            filename = os.path.join(dirname, getFilename(d) + ".txt")
+            filename = os.path.join(dirname, f"{getFilename(d)}.txt")
             content_d = json.dumps(data[d], indent=2, sort_keys=True)
             with open(filename, "w") as file:
                 file.write(content_d)
-        filename = os.path.join(dirname, getFilename(self.META) + ".txt")
+        filename = os.path.join(dirname, f"{getFilename(self.META)}.txt")
         with open(filename, "w") as file:
             content_meta = json.dumps(meta, indent=2, sort_keys=True)
             file.write(content_meta)
         pname = platform_name
         if "platform_hash" in meta:
-            pname = pname + " ({})".format(meta["platform_hash"])
-        getLogger().info("Writing file for {}: {}".format(pname, dirname))
+            pname = pname + f' ({meta["platform_hash"]})'
+        getLogger().info(f"Writing file for {pname}: {dirname}")

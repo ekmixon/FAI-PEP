@@ -71,22 +71,22 @@ parser.add_argument(
 
 class GetConnectedDevices(object):
     def __init__(self, **kwargs):
-        raw_args = kwargs.get("raw_args", None)
+        raw_args = kwargs.get("raw_args")
         self.args, self.unknowns = parser.parse_known_args(raw_args)
 
     def run(self):
         platforms = getPlatforms(self.args, tempdir="/tmp")
-        devices = []
-        for p in platforms:
-            devices.append(
-                {
-                    "kind": p.getKind(),
-                    "name": p.getName(),
-                    "hash": p.platform_hash,
-                    "abi": p.getABI(),
-                    "os": p.getOS(),
-                }
-            )
+        devices = [
+            {
+                "kind": p.getKind(),
+                "name": p.getName(),
+                "hash": p.platform_hash,
+                "abi": p.getABI(),
+                "os": p.getOS(),
+            }
+            for p in platforms
+        ]
+
         json_str = json.dumps(devices)
         print(json_str)
         return json_str

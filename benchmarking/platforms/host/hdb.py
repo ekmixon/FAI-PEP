@@ -27,31 +27,27 @@ class HDB(PlatformUtilBase):
         super(HDB, self).__init__(device, tempdir)
 
     def push(self, src, tgt):
-        getLogger().info("push {} to {}".format(src, tgt))
+        getLogger().info(f"push {src} to {tgt}")
         if src != tgt:
             if os.path.isdir(src):
                 if os.path.exists(tgt):
                     shutil.rmtree(tgt)
                 shutil.copytree(src, tgt)
-            else:
-                if os.stat(src).st_size < COPY_THRESHOLD:
-                    shutil.copyfile(src, tgt)
-                    os.chmod(tgt, 0o777)
-                else:
-                    if not os.path.isfile(tgt):
-                        getLogger().info(
-                            "Create symlink between {} and {}".format(src, tgt)
-                        )
-                        os.symlink(src, tgt)
+            elif os.stat(src).st_size < COPY_THRESHOLD:
+                shutil.copyfile(src, tgt)
+                os.chmod(tgt, 0o777)
+            elif not os.path.isfile(tgt):
+                getLogger().info(f"Create symlink between {src} and {tgt}")
+                os.symlink(src, tgt)
 
     def pull(self, src, tgt):
-        getLogger().info("pull {} to {}".format(src, tgt))
+        getLogger().info(f"pull {src} to {tgt}")
         if src != tgt:
             shutil.copyfile(src, tgt)
             os.chmod(tgt, 0o777)
 
     def deleteFile(self, file):
-        getLogger().info("delete {}".format(file))
+        getLogger().info(f"delete {file}")
         if os.path.isdir(file):
             shutil.rmtree(file)
         else:

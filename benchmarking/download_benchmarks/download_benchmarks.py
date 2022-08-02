@@ -52,7 +52,8 @@ class DownloadBenchmarks(object):
                     value = one_benchmark["model"]["files"][field]
                     assert (
                         "location" in value
-                    ), "location field is missing in benchmark " "{}".format(filename)
+                    ), f"location field is missing in benchmark {filename}"
+
                     location = value["location"]
                     md5 = value.get("md5")
                     path = self.downloadFile(location, md5)
@@ -61,7 +62,8 @@ class DownloadBenchmarks(object):
                 for value in one_benchmark["model"]["libraries"]:
                     assert (
                         "location" in value
-                    ), "location field is missing in benchmark " "{}".format(filename)
+                    ), f"location field is missing in benchmark {filename}"
+
                     location = value["location"]
                     md5 = value["md5"]
                     path = self.downloadFile(location, md5)
@@ -69,7 +71,8 @@ class DownloadBenchmarks(object):
 
         assert (
             "tests" in one_benchmark
-        ), "tests field is missing in benchmark {}".format(filename)
+        ), f"tests field is missing in benchmark {filename}"
+
         tests = one_benchmark["tests"]
         for test in tests:
             if "input_files" in test:
@@ -107,24 +110,26 @@ class DownloadBenchmarks(object):
                 return
             path = self.root_model_dir + location[1:]
         if os.path.isfile(path):
-            if md5:
-                getLogger().info("Calculate md5 of {}".format(path))
-                file_hash = None
-                with open(path, "rb") as f:
-                    file_hash = hashlib.md5()
-                    for chunk in iter(lambda: f.read(8192), b""):
-                        file_hash.update(chunk)
-                new_md5 = file_hash.hexdigest()
-                del file_hash
-                gc.collect()
-                if md5 == new_md5:
-                    getLogger().info(
-                        "File {}".format(os.path.basename(path))
+            if not md5:
+                # assume the file is the same
+                return path
+            getLogger().info(f"Calculate md5 of {path}")
+            file_hash = None
+            with open(path, "rb") as f:
+                file_hash = hashlib.md5()
+                for chunk in iter(lambda: f.read(8192), b""):
+                    file_hash.update(chunk)
+            new_md5 = file_hash.hexdigest()
+            del file_hash
+            gc.collect()
+            if md5 == new_md5:
+                getLogger().info(
+                    (
+                        f"File {os.path.basename(path)}"
                         + " is cached, skip downloading"
                     )
-                    return path
-            else:
-                # assume the file is the same
+                )
+
                 return path
         downloader_controller = DownloadFile(
             dirs=dirs, logger=self.logger, args=self.args
@@ -147,8 +152,7 @@ class DownloadBenchmarks(object):
                         if "location" in v:
                             path = self.downloadFile(v["location"], None)
                             locations.append(path)
-                else:
-                    if "location" in value:
-                        path = self.downloadFile(value["location"], None)
-                        locations.append(path)
+                elif "location" in value:
+                    path = self.downloadFile(value["location"], None)
+                    locations.append(path)
         return locations

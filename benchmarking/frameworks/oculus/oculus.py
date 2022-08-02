@@ -34,19 +34,20 @@ class OculusFramework(FrameworkBase):
         assert len(tests) == 1, (
             "At this point, only one test should "
             + "exist in one benchmark. However, benchmark "
-            + "{} doesn't.".format(benchmark["name"])
+            + f"""{benchmark["name"]} doesn't."""
         )
+
 
         model = benchmark["model"]
         test = tests[0]
-        assert set({"input_files", "output_files"}).issubset(test.keys())
+        assert {"input_files", "output_files"}.issubset(test.keys())
 
         assert platform.getType() == "android", "Only android system is supported"
         platform.util.run("root")
         platform.util.run("remount")
 
-        libraries = []
         if "libraries" in model:
+            libraries = []
             for entry in model["libraries"]:
                 target = entry["target"] if "target" in entry else platform.util.dir
                 libraries.append(
@@ -99,22 +100,20 @@ class OculusFramework(FrameworkBase):
                 value = one_entry["value"]
                 unit = one_entry["unit"]
                 metric = one_entry["metric"]
-                map_key = "{}_{}".format(type, metric)
+                map_key = f"{type}_{metric}"
                 if map_key in result:
                     entry = result[map_key]
                     if entry["unit"] is not None and entry["unit"] != unit:
                         getLogger().error(
-                            "The unit do not match in different"
-                            " test runs {} and {}".format(entry["unit"], unit)
+                            f'The unit do not match in different test runs {entry["unit"]} and {unit}'
                         )
+
                         entry["unit"] = None
                     if entry["metric"] is not None and entry["metric"] != metric:
                         getLogger().error(
-                            "The metric do not match in "
-                            " different test runs {} and {}".format(
-                                entry["metric"], metric
-                            )
+                            f'The metric do not match in  different test runs {entry["metric"]} and {metric}'
                         )
+
                         entry["metric"] = None
                     entry["values"].append(value)
                 else:
@@ -131,39 +130,36 @@ class OculusFramework(FrameworkBase):
         return result, output_files
 
     def verifyBenchmarkFile(self, benchmark, filename, is_post):
-        assert "model" in benchmark, "Model must exist in the benchmark {}".format(
-            filename
-        )
+        assert "model" in benchmark, f"Model must exist in the benchmark {filename}"
         assert (
             "name" in benchmark["model"]
-        ), "field name must exist in model in benchmark {}".format(filename)
+        ), f"field name must exist in model in benchmark {filename}"
+
         assert (
             "format" in benchmark["model"]
-        ), "field format must exist in model in benchmark {}".format(filename)
-        assert "tests" in benchmark, "Tests field is missing in benchmark {}".format(
-            filename
-        )
+        ), f"field format must exist in model in benchmark {filename}"
+
+        assert "tests" in benchmark, f"Tests field is missing in benchmark {filename}"
 
         for test in benchmark["tests"]:
             assert (
                 "input_files" in test
-            ), "inputs must exist in test in benchmark {}".format(filename)
+            ), f"inputs must exist in test in benchmark {filename}"
+
             assert (
                 "output_files" in test
-            ), "outputs must exist in test in benchmark {}".format(filename)
-            assert "metric" in test, "metric must exist in test in benchmark {}".format(
-                filename
-            )
+            ), f"outputs must exist in test in benchmark {filename}"
+
+            assert "metric" in test, f"metric must exist in test in benchmark {filename}"
 
     def _composeRunCommand(self, env_vars, program, platform, test, inputs, outputs):
-        cmd = [env_vars, program, "--json", platform.getOutputDir() + "report.json"]
+        cmd = [env_vars, program, "--json", f"{platform.getOutputDir()}report.json"]
         if len(inputs) > 0:
             cmd.extend(["--input", " ".join(inputs)])
         if len(outputs) > 0:
             cmd.extend(["--output", " ".join(outputs)])
-        if "commands" in test:
-            if "oculus" in test["commands"]:
-                for key in test["commands"]["oculus"]:
-                    val = test["commands"]["oculus"][key]
-                    cmd.extend(["--" + key, str(val)])
+        if "commands" in test and "oculus" in test["commands"]:
+            for key in test["commands"]["oculus"]:
+                val = test["commands"]["oculus"][key]
+                cmd.extend([f"--{key}", str(val)])
         return " ".join(cmd)

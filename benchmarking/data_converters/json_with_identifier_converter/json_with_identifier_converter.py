@@ -23,9 +23,7 @@ class JsonWithIdentifierConverter(DataConverterBase):
 
     def collect(self, data, args=None):
         rows = self._prepareData(data)
-        identifier = None
-        if args and "identifier" in args:
-            identifier = args["identifier"]
+        identifier = args["identifier"] if args and "identifier" in args else None
         useful_rows = (
             [
                 row[(row.find(identifier) + len(identifier)) :]

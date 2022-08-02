@@ -49,7 +49,7 @@ class FileHandler(object):
             then return the temp path. In general, we don't encourage this case.
             """
             if not pkg_resources.resource_exists("aibench", filename):
-                getLogger().error("Cannot find {}".format(filename))
+                getLogger().error(f"Cannot find {filename}")
             raw_context = pkg_resources.resource_string("aibench", filename)
             temp_name = filename.split("/")[-1]
             temp_dir = tempfile.mkdtemp(prefix="aibench")
@@ -67,7 +67,7 @@ class FileHandler(object):
             )
 
         if not os.path.isfile(path) or filename.startswith("//manifold"):
-            getLogger().info("Skip uploading {}".format(filename))
+            getLogger().info(f"Skip uploading {filename}")
             return filename, md5
 
         upload_path, cached_md5 = self._getCachedFile(path)
@@ -79,7 +79,7 @@ class FileHandler(object):
             if cache_file or md5 is not cached_md5:
                 md5 = self._saveCachedFile(path, upload_path)
         else:
-            getLogger().info("File {} cached, skip uploading".format(base_filename))
+            getLogger().info(f"File {base_filename} cached, skip uploading")
         return upload_path, md5
 
     def _getCachedFile(self, path):

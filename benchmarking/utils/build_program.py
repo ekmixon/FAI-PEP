@@ -68,7 +68,7 @@ def _isBuildSuccessful(dst, platform, script):
     if not os.path.isfile(dst) and (
         not (os.path.isdir(dst) and platform.startswith("ios"))
     ):
-        getLogger().error('Build program using "{}" failed.'.format(script))
+        getLogger().error(f'Build program using "{script}" failed.')
         return False
     return True
 
@@ -78,7 +78,7 @@ def getBuildScript(framework, frameworks_dir, platform, dst):
         try:
             build_script = _readFromBinary(framework, frameworks_dir, platform, dst)
         except BaseException as e:
-            getLogger().info("We will load from old default path due to {}.".format(e))
+            getLogger().info(f"We will load from old default path due to {e}.")
             frameworks_dir = str(
                 os.path.dirname(os.path.realpath(__file__))
                 + "/../../specifications/frameworks"
@@ -88,7 +88,7 @@ def getBuildScript(framework, frameworks_dir, platform, dst):
         try:
             build_script = _readFromPath(framework, frameworks_dir, platform, dst)
         except BaseException as e:
-            getLogger().info("We will load from binary due to {}.".format(e))
+            getLogger().info(f"We will load from binary due to {e}.")
             build_script = _readFromBinary(framework, frameworks_dir, platform, dst)
 
     return build_script
@@ -96,26 +96,31 @@ def getBuildScript(framework, frameworks_dir, platform, dst):
 
 def _readFromPath(framework, frameworks_dir, platform, dst):
     # if user provide frameworks_dir, we want to validate its correctness.
-    assert os.path.isdir(frameworks_dir), "{} must be specified.".format(frameworks_dir)
+    assert os.path.isdir(frameworks_dir), f"{frameworks_dir} must be specified."
     framework_dir = os.path.join(frameworks_dir, framework)
-    assert os.path.isdir(framework_dir), "{} must be specified.".format(framework_dir)
+    assert os.path.isdir(framework_dir), f"{framework_dir} must be specified."
     platform_dir = os.path.join(framework_dir, platform)
     build_script = None
-    if os.path.isdir(platform_dir):
-        if os.path.isfile(platform_dir + "/build.sh"):
-            build_script = platform_dir + "/build.sh"
+    if os.path.isdir(platform_dir) and os.path.isfile(
+        f"{platform_dir}/build.sh"
+    ):
+        build_script = f"{platform_dir}/build.sh"
     if build_script is None:
         # Ideally, should check the parent directory until the
         # framework directory. Save this for the future
-        build_script = framework_dir + "/build.sh"
+        build_script = f"{framework_dir}/build.sh"
         getLogger().warning(
-            "Directory {} ".format(platform_dir)
-            + "doesn't exist. Use "
-            + "{} instead".format(framework_dir)
+            (
+                (f"Directory {platform_dir} " + "doesn't exist. Use ")
+                + f"{framework_dir} instead"
+            )
         )
-    assert os.path.isfile(build_script), "Cannot find build script in {} for ".format(
-        framework_dir
-    ) + "platform {}".format(platform)
+
+    assert os.path.isfile(build_script), (
+        f"Cannot find build script in {framework_dir} for "
+        + f"platform {platform}"
+    )
+
 
     return build_script
 
@@ -126,13 +131,12 @@ def _readFromBinary(framework, frameworks_dir, platform, dst):
     )
     if not pkg_resources.resource_exists("aibench", script_path):
         raise Exception(
-            "cannot find the build script in the binary under {}.".format(script_path)
+            f"cannot find the build script in the binary under {script_path}."
         )
+
     raw_build_script = pkg_resources.resource_string("aibench", script_path)
     if not os.path.exists(os.path.dirname(dst)):
         os.makedirs(os.path.dirname(dst))
     with open(os.path.join(os.path.dirname(dst), "build.sh"), "w") as f:
         f.write(raw_build_script.decode("utf-8"))
-    build_script = f.name
-
-    return build_script
+    return f.name

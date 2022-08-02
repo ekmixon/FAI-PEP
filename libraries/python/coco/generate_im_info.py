@@ -86,14 +86,12 @@ class ImInfo(object):
                 width = int(np.round(img["width"] * im_scale))
                 assert (
                     height <= self.args.max_size
-                ), "height {} is more than the max_size {}".format(
-                    height, self.args.max_size
-                )
+                ), f"height {height} is more than the max_size {self.args.max_size}"
+
                 assert (
                     width <= self.args.max_size
-                ), "width {} is more than the max_size {}".format(
-                    width, self.args.max_size
-                )
+                ), f"width {width} is more than the max_size {self.args.max_size}"
+
                 if height < self.args.min_size or width < self.args.min_size:
                     assert height == self.args.max_size or width == self.args.max_size
                 else:
@@ -103,11 +101,11 @@ class ImInfo(object):
             im_infos.append(one_batch_info)
 
         with open(self.args.output_file, "w") as f:
-            f.write("{}, {}\n".format(num_batches * batch_size, 3))
+            f.write(f"{num_batches * batch_size}, 3\n")
             for batch in im_infos:
                 for im_info in batch:
                     s = ", ".join([str(s) for s in im_info])
-                    f.write("{}\n".format(s))
+                    f.write(f"{s}\n")
 
     def getScale(self, height, width):
         min_size = self.args.min_size

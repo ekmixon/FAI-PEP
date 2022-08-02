@@ -14,7 +14,7 @@ class DjangoFileDownloader(FileDownloaderBase):
         self.root_model_dir = kwargs["args"].root_model_dir
 
     def download_file(self, location, path):
-        getLogger().info("Downloading from {} to {}".format(location, path))
+        getLogger().info(f"Downloading from {location} to {path}")
         basedir = os.path.dirname(path)
         if not os.path.exists(basedir):
             os.makedirs(basedir)

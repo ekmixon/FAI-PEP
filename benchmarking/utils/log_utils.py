@@ -26,10 +26,9 @@ def valid_interval(arg) -> int:
             raise ValueError()
     except ValueError:
         getLogger().warning(
-            "Logging interval must be specified as an integer in seconds >= {}.  Using default {}s.".format(
-                MINIMUM_INTERVAL, DEFAULT_INTERVAL
-            )
+            f"Logging interval must be specified as an integer in seconds >= {MINIMUM_INTERVAL}.  Using default {DEFAULT_INTERVAL}s."
         )
+
         value = DEFAULT_INTERVAL
     return value
 

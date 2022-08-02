@@ -34,16 +34,13 @@ from .utilities import (
 def processRun(*args, **kwargs):
     if "process_key" not in kwargs:
         kwargs["process_key"] = ""
-    retryCount = 3
-    if "retry" in kwargs:
-        retryCount = kwargs["retry"]
+    retryCount = kwargs.get("retry", 3)
     while retryCount > 0:
         # reset run status overwritting error
         # from prior run
         setRunStatus(0, overwrite=True, key=kwargs["process_key"])
-        sleep = kwargs.get("retry_sleep")
-        if sleep:
-            getLogger().info("Sleeping for {}".format(sleep))
+        if sleep := kwargs.get("retry_sleep"):
+            getLogger().info(f"Sleeping for {sleep}")
             time.sleep(sleep)
 
         ret = _processRun(*args, **kwargs)
@@ -69,39 +66,24 @@ def _processRun(*args, **kwargs):
         getLogger().info(">>>>>> Running: %s", " ".join(*args))
     err_output = None
     try:
-        run_async = False
-        if "async" in kwargs:
-            run_async = kwargs["async"]
-        non_blocking = False
-        if "non_blocking" in kwargs and kwargs["non_blocking"]:
-            non_blocking = True
+        run_async = kwargs.get("async", False)
+        non_blocking = bool("non_blocking" in kwargs and kwargs["non_blocking"])
         if non_blocking:
             _Popen(*args, **kwargs)
             return [], None
-        timeout = None
-        if "timeout" in kwargs:
-            timeout = kwargs["timeout"]
+        timeout = kwargs.get("timeout")
         ps = _Popen(*args, **kwargs)
         t = None
         if timeout:
             t = Timer(timeout, _kill, [ps, " ".join(*args), kwargs["process_key"]])
             t.start()
-        if run_async:
-            # when running the process asyncronously we return the
-            # popen object and timer for the timeout as a tuple
-            # it is the responsibility of the caller to pass this
-            # tuple into processWait in order to gather the output
-            # from the process
-            return (ps, t), None
-        return processWait((ps, t), **kwargs)
+        return ((ps, t), None) if run_async else processWait((ps, t), **kwargs)
     except subprocess.CalledProcessError as e:
         err_output = e.output.decode("utf-8", errors="replace")
-        getLogger().error("Command failed: {}".format(err_output))
+        getLogger().error(f"Command failed: {err_output}")
     except Exception:
-        getLogger().error(
-            "Unknown exception {}: {}".format(sys.exc_info()[0], " ".join(*args))
-        )
-        err_output = "{}".format(sys.exc_info()[0])
+        getLogger().error(f'Unknown exception {sys.exc_info()[0]}: {" ".join(*args)}')
+        err_output = f"{sys.exc_info()[0]}"
     setRunStatus(1, key=kwargs["process_key"])
     return [], err_output
 
@@ -109,18 +91,10 @@ def _processRun(*args, **kwargs):
 def processWait(processAndTimeout, **kwargs):
     try:
         ps, t = processAndTimeout
-        process_key = ""
-        if "process_key" in kwargs:
-            process_key = kwargs["process_key"]
-        log_output = False
-        if "log_output" in kwargs:
-            log_output = kwargs["log_output"]
-        ignore_status = False
-        if "ignore_status" in kwargs:
-            ignore_status = kwargs["ignore_status"]
-        patterns = []
-        if "patterns" in kwargs:
-            patterns = kwargs["patterns"]
+        process_key = kwargs.get("process_key", "")
+        log_output = kwargs.get("log_output", False)
+        ignore_status = kwargs.get("ignore_status", False)
+        patterns = kwargs.get("patterns", [])
         output, match = _getOutput(ps, patterns, process_key=process_key)
         ps.stdout.close()
         if match:
@@ -143,10 +117,20 @@ def processWait(processAndTimeout, **kwargs):
                 status = 0
         if t is not None:
             t.cancel()
-        if log_output or status != 0:
+        if log_output:
             if status != 0:
-                getLogger().info("Process exited with status: {}".format(status))
+                getLogger().info(f"Process exited with status: {status}")
                 setRunStatus(1, key=process_key)
+            if "filter" in kwargs:
+                output = _filterOutput(output, kwargs["filter"])
+            getLogger().info(
+                "\n\nProgram Output:\n{}\n{}\n{}\n".format(
+                    "=" * 80, "\n".join(output), "=" * 80
+                )
+            )
+        elif status != 0:
+            getLogger().info(f"Process exited with status: {status}")
+            setRunStatus(1, key=process_key)
             if "filter" in kwargs:
                 output = _filterOutput(output, kwargs["filter"])
             getLogger().info(
@@ -162,10 +146,10 @@ def processWait(processAndTimeout, **kwargs):
             return [], "\n".join(output)
     except subprocess.CalledProcessError as e:
         err_output = e.output.decode("utf-8", errors="replace")
-        getLogger().error("Command failed: {}".format(err_output))
+        getLogger().error(f"Command failed: {err_output}")
     except Exception:
-        err_output = "{}".format(sys.exc_info()[0])
-        getLogger().error("Unknown exception {}".format(sys.exc_info()[0]))
+        err_output = f"{sys.exc_info()[0]}"
+        getLogger().error(f"Unknown exception {sys.exc_info()[0]}")
     return [], err_output
 
 
@@ -180,14 +164,15 @@ def _filterOutput(output, match_list):
 
 
 def _Popen(*args, **kwargs):
-    # only allow allowlisted args to be passed into popen
-    customArgs = {}
     allowlist = ["env"]
-    for arg in allowlist:
-        if arg in kwargs:
-            customArgs[arg] = kwargs[arg]
-
-    ps = subprocess.Popen(
+    customArgs = {arg: kwargs[arg] for arg in allowlist if arg in kwargs}
+    # We set the buffer size to system default.
+    # this is not really recommended. However, we need to stream the
+    # output as they are available. So we do this. But, if the data
+    # comes in too fast and there is no time to consume them, the output
+    # may be truncated. Now, add a buffer to reduce the problem.
+    # will see whether this is indeed an issue later on.
+    return subprocess.Popen(
         *args,
         bufsize=-1,
         stdout=subprocess.PIPE,
@@ -197,13 +182,6 @@ def _Popen(*args, **kwargs):
         errors="replace",
         **customArgs
     )
-    # We set the buffer size to system default.
-    # this is not really recommended. However, we need to stream the
-    # output as they are available. So we do this. But, if the data
-    # comes in too fast and there is no time to consume them, the output
-    # may be truncated. Now, add a buffer to reduce the problem.
-    # will see whether this is indeed an issue later on.
-    return ps
 
 
 def _getOutput(ps, patterns, process_key=""):
@@ -247,6 +225,6 @@ def _kill(p, cmd, processKey):
         os.killpg(p.pid, signal.SIGKILL)
     except OSError:
         pass  # ignore
-    getLogger().error("Process timed out: {}".format(cmd))
+    getLogger().error(f"Process timed out: {cmd}")
     setRunStatus(1, key=processKey)
     setRunTimeout()

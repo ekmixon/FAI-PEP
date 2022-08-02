@@ -32,14 +32,14 @@ COPY_THRESHOLD = 6442450944  # 6 GB
 class BenchmarkCollector(object):
     def __init__(self, framework, model_cache, **kwargs):
 
-        self.args = kwargs.get("args", None)
+        self.args = kwargs.get("args")
         if not os.path.isdir(model_cache):
             os.makedirs(model_cache)
         self.model_cache = model_cache
         self.framework = framework
 
     def collectBenchmarks(self, info, source, user_identifier):
-        assert os.path.isfile(source), "Source {} is not a file".format(source)
+        assert os.path.isfile(source), f"Source {source} is not a file"
         with open(source, "r") as f:
             content = json.load(f)
 
@@ -69,7 +69,7 @@ class BenchmarkCollector(object):
         self.framework.verifyBenchmarkFile(benchmark, filename, is_post)
 
     def _collectOneBenchmark(self, source, meta, benchmarks, info, user_identifier):
-        assert os.path.isfile(source), "Benchmark {} does not exist".format(source)
+        assert os.path.isfile(source), f"Benchmark {source} does not exist"
         with open(source, "r") as b:
             one_benchmark = json.load(b)
 
@@ -120,9 +120,12 @@ class BenchmarkCollector(object):
             with open(filename, "w") as f:
                 f.write(s)
             getLogger().info(
-                "Model {} is changed. ".format(model["name"])
-                + "Please update the meta json file."
+                (
+                    f'Model {model["name"]} is changed. '
+                    + "Please update the meta json file."
+                )
             )
+
 
         # update the file field with the absolute path
         # needs to be after the file is updated
@@ -205,12 +208,10 @@ class BenchmarkCollector(object):
     def _calculateMD5(self, model_name, old_md5, filename):
         if os.stat(filename).st_size >= COPY_THRESHOLD or os.path.islink(model_name):
             if not os.path.isfile(model_name):
-                getLogger().info(
-                    "Create symlink between {} and {}".format(filename, model_name)
-                )
+                getLogger().info(f"Create symlink between {filename} and {model_name}")
                 os.symlink(filename, model_name)
             return old_md5
-        getLogger().info("Calculate md5 of {}".format(model_name))
+        getLogger().info(f"Calculate md5 of {model_name}")
         with open(model_name, "rb") as f:
             file_hash = hashlib.md5()
             for chunk in iter(lambda: f.read(8192), b""):
@@ -224,9 +225,9 @@ class BenchmarkCollector(object):
         if "location" not in field:
             return False
         location = field["location"]
-        if location[0:4] == "http":
+        if location[:4] == "http":
             abs_name = destination_name
-            getLogger().info("Downloading {}".format(location))
+            getLogger().info(f"Downloading {location}")
             r = requests.get(location)
             if r.status_code == 200:
                 with open(destination_name, "wb") as f:
@@ -236,39 +237,36 @@ class BenchmarkCollector(object):
             if os.path.isfile(abs_name):
                 if os.stat(abs_name).st_size < COPY_THRESHOLD:
                     shutil.copyfile(abs_name, destination_name)
-                else:
-                    if not os.path.isfile(destination_name):
-                        getLogger().info(
-                            "Create symlink between {} and {}".format(
-                                abs_name, destination_name
-                            )
-                        )
-                        os.symlink(abs_name, destination_name)
+                elif not os.path.isfile(destination_name):
+                    getLogger().info(f"Create symlink between {abs_name} and {destination_name}")
+                    os.symlink(abs_name, destination_name)
             else:
                 import distutils.dir_util
 
                 distutils.dir_util.copy_tree(abs_name, destination_name)
         if os.path.isdir(destination_name) and field["md5"] == "directory":
             return False
-        assert os.path.isfile(destination_name), "File {} cannot be retrieved".format(
+        assert os.path.isfile(
             destination_name
-        )
+        ), f"File {destination_name} cannot be retrieved"
+
         # verify the md5 matches the file downloaded
         md5 = self._calculateMD5(destination_name, field["md5"], abs_name)
         if md5 != field["md5"]:
             getLogger().info(
-                "Source file {} is changed, ".format(location)
-                + " updating MD5. "
-                + "Please commit the updated json file."
+                (
+                    (f"Source file {location} is changed, " + " updating MD5. ")
+                    + "Please commit the updated json file."
+                )
             )
+
             field["md5"] = md5
             return True
         return False
 
     def _getDestFilename(self, field, dir):
         fn = os.path.splitext(field["filename"])
-        cached_name = os.path.join(dir, fn[0] + fn[1])
-        return cached_name
+        return os.path.join(dir, fn[0] + fn[1])
 
     def _updateTests(self, one_benchmark, source):
         if one_benchmark["tests"][0]["metric"] == "generic":
@@ -300,19 +298,17 @@ class BenchmarkCollector(object):
             # del test["command"]
 
     def _updateNewTestFields(self, tests, one_benchmark):
-        idx = 0
-        for test in tests:
+        for idx, test in enumerate(tests):
             identifier = test["identifier"].replace("{ID}", str(idx))
             test["identifier"] = identifier
-            idx += 1
 
     def _getAbsFilename(self, file, source, cache_dir):
         location = file["location"]
-        filename = file["filename"]
-        if location[0:4] == "http":
+        if location[:4] == "http":
+            filename = file["filename"]
             # Need to download, return the destination filename
             return os.path.join(cache_dir, filename)
-        elif location[0:2] == "//":
+        elif location[:2] == "//":
             assert self.args.root_model_dir is not None, (
                 "When specifying relative directory, the "
                 "--root_model_dir must be specified."
